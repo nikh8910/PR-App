@@ -1,3 +1,37 @@
+/**
+ * @file api.js
+ * @description Central API service layer for the SAP S/4HANA Cloud mobile app.
+ *
+ * All communication with SAP OData services (V2 and V4) is routed through
+ * this module. It handles:
+ *  - Authentication (API Key or Basic Auth)
+ *  - CSRF token management (fetch + cache + invalidation on 403)
+ *  - Dev-mode proxy URL rewriting (Vite proxy → SAP host)
+ *  - Consistent error parsing from SAP JSON/XML/HTML error responses
+ *  - OData query construction with input sanitization
+ *
+ * ## SAP Services Used
+ *  - API_PURCHASEREQUISITION_2         Purchase Requisitions (PR)
+ *  - API_PURCHASEORDER_PROCESS_SRV     Purchase Orders (PO)
+ *  - API_GOODSMOVEMENT_SRV             Goods Movements (GR/GI)
+ *  - API_INBOUNDDELIVERY_SRV           Inbound Deliveries
+ *  - API_OUTBOUND_DELIVERY_SRV         Outbound Deliveries
+ *  - API_PRODUCT_SRV                   Product Master / Descriptions
+ *  - API_WHSE_PHYSINVTRYITEM_2         Physical Inventory (PI)
+ *  - api_warehouse_order_task_2        Warehouse Tasks (EWM)
+ *  - api_whse_product_stck             Warehouse Product Stock
+ *  - API_HANDLING_UNIT_SRV             Handling Units (HU)
+ *
+ * ## Authentication
+ *  - Production: uses full absolute SAP URL + Basic Auth or API Key header
+ *  - Development: URL is rewritten to a local Vite proxy path to bypass CORS
+ *
+ * @exports getHeaders       - Build HTTP headers (auth + content-type)
+ * @exports getProxyUrl      - Rewrite SAP URL to dev proxy path when in DEV mode
+ * @exports parseSapError    - Extract a human-readable message from SAP error responses
+ * @exports api              - All API call functions as a single object
+ */
+
 export const getHeaders = (config) => {
     // Use plain objects for headers to ensure maximum compatibility with native plugins
     const headers = {
@@ -19,7 +53,7 @@ export const getHeaders = (config) => {
 };
 
 // Helper to use proxy in dev
-const getProxyUrl = (url) => {
+export const getProxyUrl = (url) => {
     // Only use proxy rewrites in Development Mode (npm run dev)
     // In Production/Android Build, we must use the full absolute URL
     if (import.meta.env.DEV) {
@@ -43,6 +77,181 @@ const resolvePRBase = (config) => {
     }
     return `${base}/PurchaseReqn`;
 };
+
+// --- Global Error Parser ---
+export const parseSapError = (status, errorText) => {
+    try {
+        if (!errorText) return `Error ${status}: Unknown API Error`;
+
+        // Try parsing as JSON first
+        try {
+            const json = JSON.parse(errorText);
+
+            // Standard SAP OData V2/V4 Error Format
+            if (json && json.error) {
+                let msg = '';
+                if (json.error.message && json.error.message.value) {
+                    msg = json.error.message.value;
+                } else if (typeof json.error.message === 'string') {
+                    msg = json.error.message;
+                }
+                // Append detail messages (OData v4 error.details array)
+                if (Array.isArray(json.error.details)) {
+                    const detailMsgs = json.error.details
+                        .map(d => d.message).filter(Boolean);
+                    if (detailMsgs.length > 0) {
+                        msg = msg ? msg + '\n' + detailMsgs.join('\n') : detailMsgs.join('\n');
+                    }
+                }
+                if (msg) return msg;
+            }
+            // Other JSON structures
+            if (json && json.message) return json.message;
+            if (json && json.error_description) return json.error_description;
+
+        } catch (je) {
+            // Not JSON, might be XML/HTML
+
+            // Try extracting <message> tags from XML
+            const msgMatch = errorText.match(/<message[^>]*>(.*?)<\/message>/i);
+            if (msgMatch && msgMatch[1]) {
+                return msgMatch[1].trim();
+            }
+
+            // If it's a giant HTML page, just return the status code to avoid jargon
+            if (errorText.toLowerCase().includes('<html')) {
+                const titleMatch = errorText.match(/<title[^>]*>(.*?)<\/title>/i);
+                if (titleMatch && titleMatch[1]) {
+                    return `HTTP ${status}: ${titleMatch[1].trim()}`;
+                }
+                return `HTTP ${status}: Server Error`;
+            }
+        }
+
+        // Truncate if it's just raw text that is too long (e.g. stack traces)
+        if (errorText.length > 200) {
+            return `HTTP ${status}: ${errorText.substring(0, 197)}...`;
+        }
+
+        return `${status}: ${errorText}`;
+    } catch (fallbackErr) {
+        return `Error ${status}`;
+    }
+};
+
+/**
+ * Extract only the human-readable message from an error thrown by API layer.
+ * Many API functions still throw errors with raw JSON embedded.
+ * This utility catches those cases at the UI layer as a safety net.
+ *
+ * @param {string|Error} err - raw error or error.message string
+ * @returns {string} clean, readable message
+ */
+export const extractSapMessage = (err) => {
+    const raw = typeof err === 'string' ? err : (err?.message || String(err));
+    if (!raw) return 'Unknown error';
+
+    // Try to find embedded JSON and extract message.value from it
+    const jsonStart = raw.indexOf('{');
+    if (jsonStart !== -1) {
+        try {
+            const jsonStr = raw.substring(jsonStart);
+            const json = JSON.parse(jsonStr);
+
+            // Standard SAP OData error format
+            if (json.error?.message?.value) return json.error.message.value;
+            if (typeof json.error?.message === 'string') return json.error.message;
+
+            // Nested innererror → also check for message array
+            if (json.error?.innererror?.errordetails) {
+                const details = json.error.innererror.errordetails;
+                const msgs = details.map(d => d.message).filter(Boolean);
+                if (msgs.length > 0) return msgs.join('. ');
+            }
+
+            // message array at top level
+            if (Array.isArray(json.error?.details)) {
+                const msgs = json.error.details.map(d => d.message).filter(Boolean);
+                if (msgs.length > 0) return msgs.join('. ');
+            }
+
+            // Generic message
+            if (json.message?.value) return json.message.value;
+            if (typeof json.message === 'string') return json.message;
+        } catch (_) {
+            // JSON parse failed — try extracting a value field via regex
+        }
+    }
+
+    // Regex fallback: find "value":"<message>" pattern
+    const valueMatch = raw.match(/"value"\s*:\s*"([^"]+)"/);
+    if (valueMatch && valueMatch[1]) return valueMatch[1];
+
+    // If it looks like a clean prefix before JSON junk, return just the prefix  
+    if (jsonStart > 0) {
+        const prefix = raw.substring(0, jsonStart).replace(/[:\s]+$/, '').trim();
+        if (prefix && prefix.length > 5) return prefix;
+    }
+
+    // If the raw message is just too long (raw dump), truncate gracefully
+    if (raw.length > 200) return raw.substring(0, 200) + '…';
+
+    return raw;
+};
+
+// --- Master Data Cache ---
+// Secure in-memory cache for static master data (Warehouses, Plants, Storage Locations, etc.)
+// Persists for the duration of the user session on the single-page app without hitting the backend.
+// Store in-flight promises to deduplicate concurrent calls
+const _masterDataPromises = {};
+const _masterDataCache = {
+    warehouses: null,
+    plants: null,
+    storageLocsByPlantMat: {},
+    storageLocsByPlant: {},
+    ewmUsers: {},
+    storageTypes: {},
+    storageBins: {},
+    warehouseResources: {},
+    resourceQueueSequence: {},
+    productDescriptions: {},
+    packagingMaterials: null,
+    suppliers: {},
+    gtins: {},
+    deliveryHeaders: {},
+    warehouseTasks: {}
+};
+
+// --- CSRF Token Cache ---
+// Keyed by service root URL. Tokens are reused across calls to avoid a GET round-trip per mutation.
+// Invalidated on 403 responses so a fresh token is fetched on the next call.
+const _csrfCache = {};
+
+const _extractCsrf = (response) =>
+    (response.headers?.get?.('x-csrf-token')) ||
+    response.headers?.['x-csrf-token'] ||
+    response.headers?.['X-CSRF-Token'] || '';
+
+const getCsrfToken = async (serviceRootUrl, headers) => {
+    const cacheKey = serviceRootUrl;
+    if (_csrfCache[cacheKey]) return _csrfCache[cacheKey];
+    const tokenUrl = getProxyUrl(serviceRootUrl);
+    try {
+        const resp = await fetch(tokenUrl, { method: 'GET', headers: { ...headers, 'X-CSRF-Token': 'Fetch' } });
+        const token = _extractCsrf(resp);
+        if (token) _csrfCache[cacheKey] = token;
+        return token;
+    } catch (e) {
+        console.warn('[getCsrfToken] Failed to fetch CSRF token:', e);
+        return '';
+    }
+};
+
+const invalidateCsrf = (serviceRootUrl) => { delete _csrfCache[serviceRootUrl]; };
+
+// --- OData Input Sanitizer ---
+// Escapes single quotes to prevent OData filter injection (e.g. user types it's → it''s)
+const sanitizeODataStr = (val) => String(val ?? '').replace(/'/g, "''");
 
 export const api = {
     fetchPRs: async (config, top = 10) => {
@@ -78,14 +287,12 @@ export const api = {
 
             // Fallback: If for some reason the swap didn't work (e.g. getPOUrl returned something custom), try standard pattern
             if (baseUrl === poBaseUrl) {
-                console.warn("Service swap failed in fetchMaterialDocumentsForPO, trying generic construction.");
+                console.warn('[api] Service swap failed in fetchMaterialDocumentsForPO, trying generic construction.');
                 if (poBaseUrl.includes('/sap/opu/')) {
                     const root = poBaseUrl.substring(0, poBaseUrl.indexOf('/sap/opu/'));
                     baseUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV`;
                 }
             }
-
-            console.log("Fetching Mat Docs from:", baseUrl);
 
             // Construct query: Filter by PO, Select specific fields to minimize payload
             const query = `$filter=PurchaseOrder eq '${poNumber}'&$select=PurchaseOrderItem,QuantityInEntryUnit,DebitCreditCode,GoodsMovementType,IsCompletelyDelivered`;
@@ -156,25 +363,13 @@ export const api = {
         let url = baseUrl;
         url = getProxyUrl(url);
 
-        // 1. Fetch CSRF Token
-        // Create new object for token headers to avoid mutation issues
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+        // Fetch CSRF (cached per service)
+        const prRootUrl = getProxyUrl(`${baseUrl}?$top=1`);
+        // Note: PR service uses entity URL for token, not bare root
+        const csrfTokenPR = await getCsrfToken(resolvePRBase(config), headers);
+        if (csrfTokenPR) headers['X-CSRF-Token'] = csrfTokenPR;
 
-        const tokenResponse = await fetch(`${url}?$top=1`, {
-            method: 'GET',
-            headers: tokenHeaders
-        });
-
-        // Robust CSRF extraction for both Headers object and POJO response
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // 2. Perform the POST call
+        // Perform the POST call
         const response = await fetch(url, {
             method: 'POST',
             headers,
@@ -194,22 +389,11 @@ export const api = {
         let url = `${baseUrl}('${prId}')/_PurchaseRequisitionItem`;
         url = getProxyUrl(url);
 
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${baseUrl}('${prId}')`);
+        // Fetch CSRF (cached per service)
+        const csrfTokenItem = await getCsrfToken(resolvePRBase(config), headers);
+        if (csrfTokenItem) headers['X-CSRF-Token'] = csrfTokenItem;
 
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-
-        // Robust CSRF extraction
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // 2. Perform POST
+        // Perform POST
         const response = await fetch(url, {
             method: 'POST',
             headers,
@@ -269,24 +453,11 @@ export const api = {
         let url = `${matDocUrl}/A_MaterialDocumentHeader`;
         url = getProxyUrl(url);
 
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        // Fetch from Service Root, ensuring we hit the right service
-        const tokenUrl = getProxyUrl(`${matDocUrl}/`);
+        // Fetch CSRF (cached per service)
+        const csrfToken = await getCsrfToken(`${matDocUrl}/`, headers);
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // 2. Perform POST
-        console.log("POST GR URL:", url);
-        console.log("POST GR PAYLOAD:", JSON.stringify(data, null, 2));
-
+        // Perform POST
         const response = await fetch(url, {
             method: 'POST',
             headers,
@@ -295,6 +466,7 @@ export const api = {
 
         if (!response.ok) {
             const errorText = await response.text();
+            if (response.status === 403) invalidateCsrf(`${matDocUrl}/`);
             throw new Error(`Failed to Post GR: ${response.status} ${errorText}`);
         }
         return response.json();
@@ -312,10 +484,31 @@ export const api = {
         return url;
     },
 
-    fetchPOs: async (config, top = 20) => {
+    fetchPOs: async (config, top = 20, filters = {}) => {
         const headers = getHeaders(config);
         const poBaseUrl = api.getPOUrl(config);
-        let url = `${poBaseUrl}/A_PurchaseOrder?$top=${top}&$orderby=PurchaseOrder desc&$expand=to_PurchaseOrderItem`;
+
+        // Build $filter from supplied criteria
+        const filterParts = [];
+
+        // When a specific PO number is given, use it as the SOLE filter (ignore dates etc)
+        if (filters.purchaseOrder) {
+            filterParts.push(`PurchaseOrder eq '${sanitizeODataStr(filters.purchaseOrder)}'`);
+        } else {
+            if (filters.purchaseOrderType) filterParts.push(`PurchaseOrderType eq '${sanitizeODataStr(filters.purchaseOrderType)}'`);
+            if (filters.supplyingPlant) filterParts.push(`SupplyingPlant eq '${sanitizeODataStr(filters.supplyingPlant)}'`);
+            if (filters.supplier) filterParts.push(`Supplier eq '${sanitizeODataStr(filters.supplier)}'`);
+            if (filters.dateFrom) {
+                filterParts.push(`PurchaseOrderDate ge datetime'${filters.dateFrom}T00:00:00'`);
+            }
+            if (filters.dateTo) {
+                filterParts.push(`PurchaseOrderDate le datetime'${filters.dateTo}T23:59:59'`);
+            }
+        }
+
+        const filterStr = filterParts.length > 0 ? `&$filter=${encodeURIComponent(filterParts.join(' and '))}` : '';
+        const expandStr = filterParts.length === 0 ? '&$expand=to_PurchaseOrderItem' : '';
+        let url = `${poBaseUrl}/A_PurchaseOrder?$top=${top}&$orderby=PurchaseOrder desc${filterStr}${expandStr}`;
         url = getProxyUrl(url);
 
         const response = await fetch(url, { headers });
@@ -325,6 +518,7 @@ export const api = {
         }
         return response.json();
     },
+
 
     fetchPOItems: async (config, poNumber) => {
         const headers = getHeaders(config);
@@ -346,21 +540,12 @@ export const api = {
         let url = `${poBaseUrl}/A_PurchaseOrder`;
         url = getProxyUrl(url);
 
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        // Fetch from Service Root
-        const tokenUrl = getProxyUrl(`${poBaseUrl}/`);
+        // Fetch CSRF (cached per service)
+        const poRootUrl = `${poBaseUrl}/`;
+        const csrfToken = await getCsrfToken(poRootUrl, headers);
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // 2. Perform POST
+        // Perform POST
         const response = await fetch(url, {
             method: 'POST',
             headers,
@@ -369,6 +554,7 @@ export const api = {
 
         if (!response.ok) {
             const errorText = await response.text();
+            if (response.status === 403) invalidateCsrf(`${poBaseUrl}/`);
             throw new Error(`Failed to Create PO: ${response.status} ${errorText}`);
         }
         return response.json();
@@ -387,6 +573,9 @@ export const api = {
     },
 
     fetchStorageLocations: async (config, plant, material) => {
+        const cacheKey = `${plant}_${material}`;
+        if (_masterDataCache.storageLocsByPlantMat[cacheKey]) return _masterDataCache.storageLocsByPlantMat[cacheKey];
+
         const headers = getHeaders(config);
         const prodBaseUrl = api.getProductUrl(config);
         // Using A_ProductStorageLocation to find valid locations for this material/plant
@@ -401,898 +590,3633 @@ export const api = {
             return { d: { results: [] } };
         }
         const json = await response.json();
-        const results = json.d ? json.d.results : (json.value || []);
-        console.log("Storage Locations Fetched:", results.length, results[0]);
+        _masterDataCache.storageLocsByPlantMat[cacheKey] = json;
         return json;
     },
 
-    // Fetch all Plants for value help (using OData V4 API_PLANT_2)
+    // Fetch all Plants for value help (using OData V4 API_PLANT_2, with fallback)
     fetchPlantList: async (config) => {
-        const headers = getHeaders(config);
+        if (_masterDataCache.plants) return _masterDataCache.plants;
+        if (_masterDataPromises.plants) return _masterDataPromises.plants;
 
-        // Build the correct OData V4 URL for API_PLANT_2
-        // Format: /sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant
-        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
-        let plantUrl;
-        if (baseUrl.includes('/sap/opu/')) {
-            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
-            plantUrl = `${root}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant`;
-        } else {
-            // Extract root from S/4HANA Cloud pattern
-            const urlObj = new URL(baseUrl);
-            plantUrl = `${urlObj.origin}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant`;
-        }
-
-        let url = `${plantUrl}?$select=Plant,PlantName&$top=100`;
-        url = getProxyUrl(url);
-
-        console.log("Fetching Plants from API_PLANT_2 (OData V4):", url);
-
-        try {
-            const response = await fetch(url, { headers });
-            if (!response.ok) {
-                console.warn(`Failed to fetch plants: ${response.status}`);
-                return { d: { results: [] } };
-            }
-            const json = await response.json();
-            // OData V4 returns results in 'value' array
-            const results = json.value || json.d?.results || [];
-
-            // Sort alphabetically
-            results.sort((a, b) => (a.Plant || '').localeCompare(b.Plant || ''));
-            return { d: { results: results } };
-        } catch (err) {
-            console.warn("Error fetching plants:", err);
-            return { d: { results: [] } };
-        }
-    },
-
-
-    // Fetch Storage Locations for a specific Plant (using API_PRODUCT_SRV like GR for PO)
-    fetchStorageLocationsByPlant: async (config, plant) => {
-        const headers = getHeaders(config);
-        const prodBaseUrl = api.getProductUrl(config);
-
-        // Using A_ProductStorageLocation to find storage locations for this plant
-        let url = `${prodBaseUrl}/A_ProductStorageLocation?$filter=Plant eq '${plant}'&$select=StorageLocation&$top=200`;
-        url = getProxyUrl(url);
-
-        console.log("Fetching Storage Locations for Plant:", plant, url);
-
-        try {
-            const response = await fetch(url, { headers });
-            if (!response.ok) {
-                console.warn(`Failed to fetch storage locations: ${response.status}`);
-                return { d: { results: [] } };
-            }
-            const json = await response.json();
-            const results = json.d ? json.d.results : (json.value || []);
-
-            // Deduplicate storage locations
-            const uniqueSLocs = [];
-            const seen = new Set();
-            for (const sl of results) {
-                if (sl.StorageLocation && !seen.has(sl.StorageLocation)) {
-                    seen.add(sl.StorageLocation);
-                    uniqueSLocs.push({ StorageLocation: sl.StorageLocation, StorageLocationName: '' });
-                }
-            }
-            // Sort alphabetically
-            uniqueSLocs.sort((a, b) => a.StorageLocation.localeCompare(b.StorageLocation));
-            console.log("Storage Locations Found:", uniqueSLocs.length);
-            return { d: { results: uniqueSLocs } };
-        } catch (err) {
-            console.warn("Error fetching storage locations:", err);
-            return { d: { results: [] } };
-        }
-    },
-
-
-    fetchSuppliers: async (config, supplierIds) => {
-        if (!supplierIds || supplierIds.length === 0) return {};
-
-        try {
+        const promise = (async () => {
             const headers = getHeaders(config);
-            // Construct Business Partner URL
-            let bpBaseUrl = config.baseUrl;
-            if (bpBaseUrl.includes('/sap/opu/')) {
-                const root = bpBaseUrl.substring(0, bpBaseUrl.indexOf('/sap/opu/'));
-                bpBaseUrl = `${root}/sap/opu/odata/sap/API_BUSINESS_PARTNER`;
+
+            // Try API_PLANT_2 first (OData V4)
+            let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+            let plantUrl;
+            if (baseUrl.includes('/sap/opu/')) {
+                const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                plantUrl = `${root}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant`;
             } else {
-                bpBaseUrl = bpBaseUrl.replace(/API_.*_SRV/i, 'API_BUSINESS_PARTNER');
+                const urlObj = new URL(baseUrl);
+                plantUrl = `${urlObj.origin}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant`;
             }
 
-            // Filter for specific suppliers
-            // $filter=Supplier in ('1000', '2000') syntax might not be supported on all versions, using OR
-            const filter = supplierIds.map(id => `Supplier eq '${id}'`).join(' or ');
-            let url = `${bpBaseUrl}/A_Supplier?$filter=${encodeURIComponent(filter)}&$select=Supplier,SupplierName`;
+            let url = `${plantUrl}?$select=Plant,PlantName,PlantCustomer,PlantSupplier&$top=50`;
             url = getProxyUrl(url);
 
-            console.log("Fetching Suppliers URL:", url);
-            const response = await fetch(url, { headers });
 
-            if (!response.ok) {
-                console.warn(`Failed to fetch suppliers: ${response.status}`);
-                return {};
-            }
-
-            const json = await response.json();
-            const results = json.d ? json.d.results : (json.value || []);
-
-            // Map ID -> Name
-            const map = {};
-            results.forEach(s => {
-                map[s.Supplier] = s.SupplierName;
-            });
-            return map;
-
-        } catch (error) {
-            console.warn("Error fetching suppliers:", error);
-            return {};
-        }
-    },
-
-    // --- Goods Issue / Outbound Delivery Methods ---
-
-    getODUrl: (config) => {
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            return `${root}/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002`;
-        }
-        // Fallback replacement if using a generic base
-        return url.replace(/API_.*_SRV/i, 'API_OUTBOUND_DELIVERY_SRV;v=0002');
-    },
-
-    fetchOutboundDeliveries: async (config, top = 20) => {
-        const headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        // Filter for open deliveries? Usually OverallStat..Status is 'A' (Not processed) or 'B' (Partially). 
-        // Assuming we want all for now or recently created.
-        let url = `${odBaseUrl}/A_OutbDeliveryHeader?$top=${top}&$orderby=DeliveryDocument desc&$expand=to_DeliveryDocumentItem`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch ODs: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    fetchOutboundDelivery: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        let url = `${odBaseUrl}/A_OutbDeliveryHeader('${deliveryId}')`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch OD ${deliveryId}: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    fetchOutboundDeliveryItems: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        let url = `${odBaseUrl}/A_OutbDeliveryHeader('${deliveryId}')/to_DeliveryDocumentItem`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch OD Items: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    pickOutboundDeliveryItem: async (config, deliveryId, itemId, etag) => {
-        let headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        // Function Import: /PickOneItem?DeliveryDocument='...'&DeliveryDocumentItem='...'
-        // Note: Parameters must be single-quoted
-        let url = `${odBaseUrl}/PickOneItem?DeliveryDocument='${deliveryId}'&DeliveryDocumentItem='${itemId}'`;
-        url = getProxyUrl(url);
-
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${odBaseUrl}/`);
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // Add If-Match header (required for locking/concurrency)
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
-
-        // 2. Perform POST
-        const response = await fetch(url, {
-            method: 'POST',
-            headers
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Pick Item: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    updateOutboundDeliveryItem: async (config, deliveryId, itemId, data, etag) => {
-        let headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        // PATCH A_OutbDeliveryItem(DeliveryDocument='...',DeliveryDocumentItem='...')
-        let url = `${odBaseUrl}/A_OutbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
-        url = getProxyUrl(url);
-
-        // 1. Fetch CSRF Token (needed for modification)
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${odBaseUrl}/`);
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // Add If-Match header (required for locking/concurrency)
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
-
-        console.log("PATCH OD Item URL:", url);
-        console.log("PATCH Payload:", data);
-
-        // 2. Perform PATCH
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Update OD Item: ${response.status} ${errorText}`);
-        }
-        // PATCH usually returns 204 No Content, so no JSON parsing if empty
-        if (response.status === 204) return true;
-        return response.json();
-    },
-
-    postGoodsIssueWithOD: async (config, deliveryId, etag) => {
-        let headers = getHeaders(config);
-        const odBaseUrl = api.getODUrl(config);
-        let url = `${odBaseUrl}/PostGoodsIssue?DeliveryDocument='${deliveryId}'`;
-        url = getProxyUrl(url);
-
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        // Fetch from Service Root
-        const tokenUrl = getProxyUrl(`${odBaseUrl}/`);
-
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        // Add If-Match header if ETag is provided (required for 428 Precondition Required)
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
-
-        // 2. Perform POST (Function Import uses POST)
-        const response = await fetch(url, {
-            method: 'POST',
-            headers
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Post GI: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    // --- Physical Inventory Methods ---
-
-    getPIUrl: (config) => {
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            return `${root}/sap/opu/odata/sap/API_PHYSICAL_INVENTORY_DOC_SRV`;
-        }
-        return url.replace(/API_.*_SRV/i, 'API_PHYSICAL_INVENTORY_DOC_SRV');
-    },
-
-    fetchPIDocs: async (config, top = 20) => {
-        const headers = getHeaders(config);
-        const piBaseUrl = api.getPIUrl(config);
-        // Removed expansion to avoid 404 if navigation property differs in specific version
-        let url = `${piBaseUrl}/A_PhysInventoryDocHeader?$top=${top}&$orderby=PhysicalInventoryDocument desc`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch PIDs: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    fetchPIItems: async (config, fiscalYear, piDoc) => {
-        const headers = getHeaders(config);
-        const piBaseUrl = api.getPIUrl(config);
-        // Navigation 'to_PhysicalInventoryDocItem' failed with 404.
-        // Fallback: Query Item entity set directly with filter
-        let url = `${piBaseUrl}/A_PhysInventoryDocItem?$filter=FiscalYear eq '${fiscalYear}' and PhysicalInventoryDocument eq '${piDoc}'`;
-        console.log("Fetching PI Items via Direct Query:", url);
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch PI Items: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    postPICount: async (config, fiscalYear, piDoc, piItem, quantity, unit, zeroCount = false) => {
-        let headers = getHeaders(config);
-        const piBaseUrl = api.getPIUrl(config);
-
-        // Use PATCH to update the item with the count
-        let url = `${piBaseUrl}/A_PhysInventoryDocItem(FiscalYear='${fiscalYear}',PhysicalInventoryDocument='${piDoc}',PhysicalInventoryDocumentItem='${piItem}')`;
-        url = getProxyUrl(url);
-
-        const payload = {
-            QuantityInUnitOfEntry: zeroCount ? "0" : `${quantity}`,
-            UnitOfEntry: unit
-        };
-
-        // 1. Fetch CSRF
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${piBaseUrl}/`);
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        console.log("PATCH PI Count URL:", url);
-        console.log("PATCH PI Payload:", payload);
-
-        // 2. Perform PATCH
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Post Count: ${response.status} ${errorText}`);
-        }
-
-        // PATCH usually returns 204 No Content
-        if (response.status === 204) return true;
-        return response.json();
-    },
-
-    // --- Stock Overview Methods ---
-
-    getStockUrl: (config) => {
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            return `${root}/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV`;
-        }
-        return url.replace(/API_.*_SRV/i, 'API_MATERIAL_STOCK_SRV');
-    },
-
-    fetchMaterialStock: async (config, materialId, plant) => {
-        const headers = getHeaders(config);
-        const stockBaseUrl = api.getStockUrl(config);
-
-        // Filter by Material. If plant is known, use it too.
-        // Using A_MatlStkInAcctMod (Material Stock in Account Model) to get general stock levels
-        // Or A_MaterialStock if available. A_MatlStkInAcctMod is standard for stock overview.
-        let query = `$filter=Material eq '${materialId}'`;
-        if (plant) {
-            query += ` and Plant eq '${plant}'`;
-        }
-
-        // We want specific fields: StorageLocation, Type, Quantity, etc.
-        // Note: Stock Value might not be directly here; might need A_ValuatedStock or product price * qty.
-        // A_MatlStkInAcctMod usually has: Plant, StorageLocation, Material, MatlWrhsStkQtyInMatlBaseUnit, InventoryStockType
-        let url = `${stockBaseUrl}/A_MatlStkInAcctMod?${query}`;
-        url = getProxyUrl(url);
-
-        console.log("Fetching Stock for:", materialId, url);
-
-        try {
-            const response = await fetch(url, { headers });
-            if (!response.ok) {
-                // Try fallback if A_MatlStkInAcctMod doesn't exist?
-                console.warn("A_MatlStkInAcctMod failed, trying generic A_MaterialStock or similar?");
-                throw new Error(`Failed to fetch Stock: ${response.status} ${response.statusText}`);
-            }
-            const json = await response.json();
-            // Enhance results with value estimation if possible (requires fetching standard price)
-            return json;
-        } catch (e) {
-            console.error(e);
-            throw e;
-        }
-    }
-    ,
-
-    // --- Inbound Delivery Methods ---
-
-    getIBDUrl: (config) => {
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            return `${root}/sap/opu/odata/sap/API_INBOUND_DELIVERY_SRV;v=0002`;
-        }
-        return url.replace(/API_.*_SRV/i, 'API_INBOUND_DELIVERY_SRV;v=0002');
-    },
-
-    fetchInboundDeliveries: async (config, top = 20) => {
-        const headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        let url = `${ibdBaseUrl}/A_InbDeliveryHeader?$top=${top}&$orderby=DeliveryDocument desc&$expand=to_DeliveryDocumentItem`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch Inbound Deliveries: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    updateInboundDeliveryHeader: async (config, deliveryId, payload, etag) => {
-        let headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`;
-        url = getProxyUrl(url);
-
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
-
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to update IBD Header: ${response.status} ${errorText}`);
-        }
-
-        // Return 204 or body. If 204, return empty object.
-        if (response.status === 204) return { success: true };
-        return response.json(); // Some configs return 200 with data
-    },
-
-    fetchInboundDelivery: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch IBD Header: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    fetchInboundDeliveryItems: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        // Expand Document Flow to get Putaway/Picking quantities
-        let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')/to_DeliveryDocumentItem?$expand=to_DocumentFlow`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch IBD Items: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    fetchInboundDeliveryItem: async (config, deliveryId, itemId) => {
-        const headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        let url = `${ibdBaseUrl}/A_InbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch IBD Item: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
-
-    updateInboundDeliveryItem: async (config, deliveryId, itemId, data, etag) => {
-        let headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        // PATCH A_InbDeliveryItem(DeliveryDocument='...',DeliveryDocumentItem='...')
-        let url = `${ibdBaseUrl}/A_InbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
-        url = getProxyUrl(url);
-
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${ibdBaseUrl}/`);
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
-
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-
-        if (etag) { // If-Match
-            headers['If-Match'] = etag;
-        }
-
-        console.log("PATCH IBD Item URL:", url);
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Update IBD Item: ${response.status} ${errorText}`);
-        }
-
-        const newEtag = response.headers.get('etag') || response.headers.get('ETag');
-
-        if (response.status === 204) {
-            return { success: true, etag: newEtag };
-        }
-        const json = await response.json();
-        return { ...json, etag: newEtag };
-    },
-
-    putawayInboundDeliveryItem: async (config, deliveryId, itemId, etag) => {
-        let headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-
-        // Function Import: /PutawayOneItem?DeliveryDocument='...'&DeliveryDocumentItem='...'
-        const url = getProxyUrl(`${ibdBaseUrl}/PutawayOneItem?DeliveryDocument='${deliveryId}'&DeliveryDocumentItem='${itemId}'`);
-
-        // 1. Fetch CSRF Token
-        try {
-            const tokenUrl = getProxyUrl(`${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`);
-            const tokenResp = await fetch(tokenUrl, {
-                method: 'HEAD',
-                headers: { ...headers, 'X-CSRF-Token': 'Fetch' }
-            });
-            const token = tokenResp.headers.get('x-csrf-token');
-            if (token) {
-                headers['X-CSRF-Token'] = token;
-            }
-        } catch (e) {
-            console.warn("Failed to fetch fresh CSRF token:", e);
-        }
-
-        // 2. Add If-Match (ETag) if provided (Required for 428 Precondition Required)
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            // Ignore "No change" errors if status is success-like
-            if (response.status !== 204 && response.status !== 200) {
-                console.warn("PutawayOneItem warning/error:", errorText);
-                // Don't throw if it's just a warning or redundant call, but throw if real error?
-                // For now, let's treat 4xx as error
-                if (response.status >= 400) {
-                    // Sometimes 412 is returned if ETag mismatch, but we handle that in caller.
-                    throw new Error(`Putaway Action Failed: ${response.status}`);
+            try {
+                const response = await fetch(url, { headers });
+                if (response.ok) {
+                    const json = await response.json();
+                    const results = json.value || json.d?.results || [];
+                    results.sort((a, b) => (a.Plant || '').localeCompare(b.Plant || ''));
+                    if (results.length > 0) {
+                        const ret = { d: { results: results } };
+                        _masterDataCache.plants = ret;
+                        return ret;
+                    }
                 }
+                console.warn(`API_PLANT_2 failed or empty: ${response.status}, trying fallback`);
+            } catch (err) {
+                console.warn('[api] API_PLANT_2 error, trying fallback:', err);
             }
-        }
-        return { success: true };
-    },
 
-    fetchInboundDeliveryDocFlow: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        let url = `${ibdBaseUrl}/A_InbDeliveryDocFlow?$filter=PrecedingDocument eq '${deliveryId}'`;
-        url = getProxyUrl(url);
+            // Fallback: Extract plants from existing POs
+            try {
+                console.log("Fallback: Extracting plants from PO data");
+                const poData = await api.fetchPOs(config, 50);
+                const results = poData.d?.results || poData.value || [];
+                const plantsSet = new Set();
+                const plantsArr = [];
 
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            // It's possible DocFlow is not supported or returns error if empty?
-            // Should be fine to return empty list if 404
-            const txt = await response.text();
-            console.warn("DocFlow fetch failed:", txt);
-            return { d: { results: [] } };
-        }
-        return response.json();
-    },
+                for (const po of results) {
+                    const items = po.to_PurchaseOrderItem?.results || [];
+                    for (const item of items) {
+                        if (item.Plant && !plantsSet.has(item.Plant)) {
+                            plantsSet.add(item.Plant);
+                            plantsArr.push({ Plant: item.Plant, PlantName: item.PlantName || '' });
+                        }
+                    }
+                }
 
-    fetchMaterialDocumentsForIBD: async (config, deliveryId) => {
-        const headers = getHeaders(config);
-        // Use API_MATERIAL_DOCUMENT_SRV
-        // Assuming baseUrl points to standard root, we construct the service URL
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            url = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentItem`;
-        } else {
-            // Fallback/Local replace
-            url = url.replace(/API_.*_SRV/i, 'API_MATERIAL_DOCUMENT_SRV') + '/A_MaterialDocumentItem';
-        }
-
-        url = `${url}?$filter=Delivery eq '${deliveryId}'`;
-        url = getProxyUrl(url);
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            // If service not found or empty, return empty list gracefully?
-            // But if specific error, throw
-            const txt = await response.text();
-            console.warn("Matches for MatDoc failed:", txt);
-            return { d: { results: [] } };
-        }
-        return response.json();
-    },
+                plantsArr.sort((a, b) => (a.Plant || '').localeCompare(b.Plant || ''));
+                console.log("Extracted plants from POs:", plantsArr.length);
+                const retFallback = { d: { results: plantsArr } };
+                _masterDataCache.plants = retFallback;
+                return retFallback;
+            } catch (fallbackErr) {
+                console.warn("Fallback plant fetch failed:", fallbackErr);
+                const retErr = { d: { results: [] } };
+                _masterDataCache.plants = retErr;
+                return retErr;
+            }
+        },
 
 
-    postGoodsReceiptForIBD: async (config, deliveryId, etag, correctDate) => {
-        let headers = getHeaders(config);
-        const ibdBaseUrl = api.getIBDUrl(config);
-        // Function Import: /PostGoodsReceipt?DeliveryDocument='...'
-        let url = `${ibdBaseUrl}/PostGoodsReceipt?DeliveryDocument='${deliveryId}'`;
 
-        // Append Date param if provided (for M7/053 fix)
-        if (correctDate) {
-            url += `&ActualGoodsMovementDate=datetime'${correctDate}'`;
-        }
+            // Fetch Storage Locations for a specific Plant (using API_PRODUCT_SRV like GR for PO)
+            fetchStorageLocationsByPlant: async (config, plant) => {
+                if (_masterDataCache.storageLocsByPlant[plant]) return _masterDataCache.storageLocsByPlant[plant];
 
-        url = getProxyUrl(url);
+                const headers = getHeaders(config);
+                const prodBaseUrl = api.getProductUrl(config);
 
-        // Add If-Match if etag is provided (Crucial for 428 errors)
-        if (etag) {
-            headers['If-Match'] = etag;
-        }
+                // Using A_ProductStorageLocation to find storage locations for this plant
+                let url = `${prodBaseUrl}/A_ProductStorageLocation?$filter=Plant eq '${plant}'&$select=StorageLocation&$top=200`;
+                url = getProxyUrl(url);
 
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${ibdBaseUrl}/`);
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                try {
+                    const response = await fetch(url, { headers });
+                    if (!response.ok) {
+                        console.warn(`Failed to fetch storage locations: ${response.status}`);
+                        return { d: { results: [] } };
+                    }
+                    const json = await response.json();
+                    const results = json.d ? json.d.results : (json.value || []);
 
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
+                    // Deduplicate storage locations
+                    const uniqueSLocs = [];
+                    const seen = new Set();
+                    for (const sl of results) {
+                        if (sl.StorageLocation && !seen.has(sl.StorageLocation)) {
+                            seen.add(sl.StorageLocation);
+                            uniqueSLocs.push({ StorageLocation: sl.StorageLocation, StorageLocationName: '' });
+                        }
+                    }
+                    // Sort alphabetically
+                    uniqueSLocs.sort((a, b) => a.StorageLocation.localeCompare(b.StorageLocation));
+                    const ret = { d: { results: uniqueSLocs } };
+                    _masterDataCache.storageLocsByPlant[plant] = ret;
+                    return ret;
+                } catch (err) {
+                    console.warn("Error fetching storage locations:", err);
+                    const retErr = { d: { results: [] } };
+                    _masterDataCache.storageLocsByPlant[plant] = retErr;
+                    return retErr;
+                }
+            },
 
-        // 2. Perform POST
-        console.log("POST GR for IBD URL:", url);
-        const response = await fetch(url, {
-            method: 'POST',
-            headers
-        });
+                // Fetch Packaging Materials (materials with type VERP or LEIH)
+                fetchPackagingMaterials: async (config) => {
+                    if (_masterDataCache.packagingMaterials) return _masterDataCache.packagingMaterials;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Post GR for IBD: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
+                    const headers = getHeaders(config);
+                    const prodBaseUrl = api.getProductUrl(config);
 
-    // --- Stock Overview Methods ---
+                    // Try OData V2 — use ProductType for V2 API
+                    let url = `${prodBaseUrl}/A_Product?$filter=ProductType eq 'VERP'&$select=Product,ProductDescription&$top=100&$format=json`;
+                    url = getProxyUrl(url);
 
-    fetchMaterialStock: async (config, filters) => {
-        const headers = getHeaders(config);
+                    console.log("Fetching Packaging Materials:", url);
 
-        // Handle both old (string) and new (object) API
-        let material = '', plant = '', storageLocation = '';
-        if (typeof filters === 'string') {
-            material = filters;
-        } else {
-            material = filters.material || '';
-            plant = filters.plant || '';
-            storageLocation = filters.storageLocation || '';
-        }
+                    try {
+                        const response = await fetch(url, { headers });
+                        if (response.ok) {
+                            const json = await response.json();
+                            const results = json.d?.results || json.value || [];
+                            if (results.length > 0) {
+                                console.log("Packaging Materials Found:", results.length);
+                                _masterDataCache.packagingMaterials = results;
+                                return results;
+                            }
+                        }
+                        console.warn(`Packaging materials VERP filter failed: ${response.status}, trying without filter`);
+                    } catch (err) {
+                        console.warn("Packaging materials error:", err);
+                    }
 
-        // Build the API_MATERIAL_STOCK_SRV URL
-        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
-        if (baseUrl.includes('/sap/opu/')) {
-            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
-            baseUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV`;
-        } else if (baseUrl.includes('api.s4hana.cloud.sap')) {
-            // S/4HANA Cloud API
-            baseUrl = baseUrl.replace(/\/API_.*_SRV/i, '/API_MATERIAL_STOCK_SRV');
-        } else {
-            baseUrl = baseUrl.replace('API_PURCHASEREQUISITION_PROCESS_SRV', 'API_MATERIAL_STOCK_SRV');
-        }
+                    // Fallback — fetch products without MaterialType filter and let user choose
+                    try {
+                        const fallbackUrl = getProxyUrl(`${prodBaseUrl}/A_Product?$select=Product,ProductDescription&$top=100&$format=json`);
+                        const fallbackRes = await fetch(fallbackUrl, { headers });
+                        if (fallbackRes.ok) {
+                            const json = await fallbackRes.json();
+                            const results = json.d?.results || json.value || [];
+                            console.log("All Products (fallback):", results.length);
+                            _masterDataCache.packagingMaterials = results;
+                            return results;
+                        }
+                    } catch (err) {
+                        console.warn("Fallback product fetch failed:", err);
+                    }
 
-        // Build filter conditions dynamically
-        const filterParts = [];
-        if (material) {
-            filterParts.push(`substringof('${material}', Material)`);
-        }
-        if (plant) {
-            filterParts.push(`Plant eq '${plant}'`);
-        }
-        if (storageLocation) {
-            filterParts.push(`StorageLocation eq '${storageLocation}'`);
-        }
+                    return [];
+                },
 
-        const filter = filterParts.length > 0 ? filterParts.join(' and ') : '';
-        let url = `${baseUrl}/A_MatlStkInAcctMod?$top=100`;
-        if (filter) {
-            url += `&$filter=${encodeURIComponent(filter)}`;
-        }
-        url = getProxyUrl(url);
 
-        console.log("Fetching Material Stock:", url);
 
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch Material Stock: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
+                    fetchSuppliers: async (config, supplierIds) => {
+                        if (!supplierIds || supplierIds.length === 0) return {};
 
-    // --- Reservation Document Methods (GI Against Reservation) ---
+                        // Check cache for each supplier ID
+                        const resultsMap = {};
+                        const missingIds = [];
+                        supplierIds.forEach(id => {
+                            if (_masterDataCache.suppliers[id]) {
+                                resultsMap[id] = _masterDataCache.suppliers[id];
+                            } else {
+                                missingIds.push(id);
+                            }
+                        });
 
-    getReservationUrl: (config) => {
-        let url = config.baseUrl;
-        if (url.includes('/sap/opu/')) {
-            const root = url.substring(0, url.indexOf('/sap/opu/'));
-            return `${root}/sap/opu/odata/sap/API_RESERVATION_DOCUMENT_SRV`;
-        }
-        return url.replace(/API_.*_SRV/i, 'API_RESERVATION_DOCUMENT_SRV');
-    },
+                        if (missingIds.length === 0) return resultsMap;
 
-    fetchReservations: async (config, top = 30) => {
-        const headers = getHeaders(config);
-        const resBaseUrl = api.getReservationUrl(config);
-        // Filter for open reservations (not deleted, not completely issued)
-        // Note: GoodsMovementIsAllowed doesn't exist in this API version, so we fetch all and filter client-side if needed
-        let url = `${resBaseUrl}/A_ReservationDocumentHeader?$top=${top}&$orderby=Reservation desc&$expand=to_ReservationDocumentItem`;
-        url = getProxyUrl(url);
+                        try {
+                            const headers = getHeaders(config);
+                            // Construct Business Partner URL
+                            let bpBaseUrl = config.baseUrl;
+                            if (bpBaseUrl.includes('/sap/opu/')) {
+                                const root = bpBaseUrl.substring(0, bpBaseUrl.indexOf('/sap/opu/'));
+                                bpBaseUrl = `${root}/sap/opu/odata/sap/API_BUSINESS_PARTNER`;
+                            } else {
+                                bpBaseUrl = bpBaseUrl.replace(/API_.*_SRV/i, 'API_BUSINESS_PARTNER');
+                            }
 
-        console.log("Fetching Reservations:", url);
+                            // Filter for specific missing suppliers
+                            const filter = missingIds.map(id => `Supplier eq '${sanitizeODataStr(id)}'`).join(' or ');
+                            let url = `${bpBaseUrl}/A_Supplier?$filter=${encodeURIComponent(filter)}&$select=Supplier,SupplierName`;
+                            url = getProxyUrl(url);
 
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch Reservations: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
+                            const response = await fetch(url, { headers });
 
-    fetchReservationItems: async (config, reservation) => {
-        const headers = getHeaders(config);
-        const resBaseUrl = api.getReservationUrl(config);
-        // Query items for a specific reservation
-        let url = `${resBaseUrl}/A_ReservationDocumentItem?$filter=Reservation eq '${reservation}'`;
-        url = getProxyUrl(url);
+                            if (!response.ok) {
+                                console.warn(`Failed to fetch suppliers: ${response.status}`);
+                                return {};
+                            }
 
-        console.log("Fetching Reservation Items:", url);
+                            const json = await response.json();
+                            const results = json.d ? json.d.results : (json.value || []);
 
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch Reservation Items: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    },
+                            // Map ID -> Name and Update Cache
+                            results.forEach(s => {
+                                _masterDataCache.suppliers[s.Supplier] = s.SupplierName;
+                                resultsMap[s.Supplier] = s.SupplierName;
+                            });
 
-    /**
-     * Post Goods Issue against Reservation via API_MATERIAL_DOCUMENT_SRV
-     * @param {Object} config - API configuration
-     * @param {Array} items - Array of items to post, each with:
-     *   { Material, Plant, StorageLocation, QuantityInEntryUnit, EntryUnit, Reservation, ReservationItem, GoodsMovementType }
-     * @returns {Promise<Object>} - Created Material Document response
-     */
-    postGoodsIssueForReservation: async (config, items) => {
-        let headers = getHeaders(config);
+                            return resultsMap;
 
-        // Construct API_MATERIAL_DOCUMENT_SRV URL
-        let matDocUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
-        if (matDocUrl.includes('/sap/opu/')) {
-            const root = matDocUrl.substring(0, matDocUrl.indexOf('/sap/opu/'));
-            matDocUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV`;
-        } else {
-            matDocUrl = matDocUrl.replace('API_PURCHASEREQUISITION_PROCESS_SRV', 'API_MATERIAL_DOCUMENT_SRV')
-                .replace('purchaserequisition', 'API_MATERIAL_DOCUMENT_SRV');
-        }
+                        } catch (error) {
+                            console.warn("Error fetching suppliers:", error);
+                            return {};
+                        }
+                    },
 
-        let url = `${matDocUrl}/A_MaterialDocumentHeader`;
-        url = getProxyUrl(url);
+                        // --- Goods Issue / Outbound Delivery Methods ---
 
-        // Create posting date in SAP OData format
-        const now = new Date();
-        const sapDate = `/Date(${now.getTime()})/`;
+                        getODUrl: (config) => {
+                            let url = config.baseUrl;
+                            if (url.includes('/sap/opu/')) {
+                                const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                return `${root}/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002`;
+                            }
+                            // Fallback replacement if using a generic base
+                            return url.replace(/API_.*_SRV/i, 'API_OUTBOUND_DELIVERY_SRV;v=0002');
+                        },
 
-        // Build payload
-        const payload = {
-            PostingDate: sapDate,
-            DocumentDate: sapDate,
-            GoodsMovementCode: "03", // 03 = Goods Issue
-            to_MaterialDocumentItem: items.map((item, idx) => ({
-                MaterialDocumentItem: String((idx + 1) * 10).padStart(4, '0'), // 0010, 0020, etc.
-                GoodsMovementType: item.GoodsMovementType || "261", // 261 = GI for Order/Reservation
-                Material: item.Material,
-                Plant: item.Plant,
-                StorageLocation: item.StorageLocation,
-                QuantityInEntryUnit: String(item.QuantityInEntryUnit),
-                EntryUnit: item.EntryUnit || item.BaseUnit || "EA",
-                Reservation: item.Reservation,
-                ReservationItem: item.ReservationItem,
-                ReservationIsFinallyIssued: item.IsFinalIssue || false
-            }))
-        };
+                            fetchOutboundDeliveries: async (config, top = 20, filters = {}) => {
+                                const cacheKey = `OD_${JSON.stringify(filters)}_${top}`;
+                                if (_masterDataCache.deliveryHeaders[cacheKey]) return _masterDataCache.deliveryHeaders[cacheKey];
 
-        // 1. Fetch CSRF Token
-        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
-        const tokenUrl = getProxyUrl(`${matDocUrl}/`);
+                                const headers = getHeaders(config);
+                                const odBaseUrl = api.getODUrl(config);
+                                const filterParts = [];
 
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
-        const csrfToken = tokenResponse.headers.get ?
-            tokenResponse.headers.get('x-csrf-token') :
-            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                                // When a specific delivery number is given, use it as the SOLE filter (ignore dates etc)
+                                if (filters.deliveryNumber) {
+                                    filterParts.push(`DeliveryDocument eq '${sanitizeODataStr(filters.deliveryNumber.trim())}'`);
+                                } else {
+                                    if (filters.shippingPoint) filterParts.push(`ShippingPoint eq '${sanitizeODataStr(filters.shippingPoint.trim().toUpperCase())}'`);
+                                    if (filters.dateFrom) filterParts.push(`PlannedGoodsIssueDate ge datetime'${filters.dateFrom}T00:00:00'`);
+                                    if (filters.dateTo) filterParts.push(`PlannedGoodsIssueDate le datetime'${filters.dateTo}T23:59:59'`);
+                                }
 
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
+                                const hasFilters = filterParts.length > 0;
+                                const filterQuery = hasFilters ? `&$filter=${encodeURIComponent(filterParts.join(' and '))}` : '';
+                                const expandClause = hasFilters ? '' : '&$expand=to_DeliveryDocumentItem';
+                                let url = `${odBaseUrl}/A_OutbDeliveryHeader?$top=${top}&$orderby=DeliveryDocument desc${expandClause}${filterQuery}`;
+                                url = getProxyUrl(url);
 
-        // 2. Perform POST
-        console.log("POST GI for Reservation URL:", url);
-        console.log("POST GI for Reservation PAYLOAD:", JSON.stringify(payload, null, 2));
+                                const response = await fetch(url, { headers });
+                                if (!response.ok) {
+                                    const errorText = await response.text();
+                                    throw new Error(`Failed to fetch ODs: ${response.status} ${errorText}`);
+                                }
+                                const json = await response.json();
+                                _masterDataCache.deliveryHeaders[cacheKey] = json;
+                                return json;
+                            },
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload)
-        });
+                                fetchOutboundDelivery: async (config, deliveryId) => {
+                                    const headers = getHeaders(config);
+                                    const odBaseUrl = api.getODUrl(config);
+                                    let url = `${odBaseUrl}/A_OutbDeliveryHeader('${deliveryId}')`;
+                                    url = getProxyUrl(url);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to Post GI for Reservation: ${response.status} ${errorText}`);
-        }
-        return response.json();
-    }
-};
+                                    const response = await fetch(url, { headers });
+                                    if (!response.ok) {
+                                        const errorText = await response.text();
+                                        throw new Error(`Failed to fetch OD ${deliveryId}: ${response.status} ${errorText}`);
+                                    }
+                                    return response.json();
+                                },
+
+                                    fetchOutboundDeliveryItems: async (config, deliveryId) => {
+                                        const headers = getHeaders(config);
+                                        const odBaseUrl = api.getODUrl(config);
+                                        let url = `${odBaseUrl}/A_OutbDeliveryHeader('${deliveryId}')/to_DeliveryDocumentItem`;
+                                        url = getProxyUrl(url);
+
+                                        const response = await fetch(url, { headers });
+                                        if (!response.ok) {
+                                            const errorText = await response.text();
+                                            throw new Error(`Failed to fetch OD Items: ${response.status} ${errorText}`);
+                                        }
+                                        return response.json();
+                                    },
+
+                                        pickOutboundDeliveryItem: async (config, deliveryId, itemId, etag) => {
+                                            let headers = getHeaders(config);
+                                            const odBaseUrl = api.getODUrl(config);
+                                            // Function Import: /PickOneItem?DeliveryDocument='...'&DeliveryDocumentItem='...'
+                                            // Note: Parameters must be single-quoted
+                                            let url = `${odBaseUrl}/PickOneItem?DeliveryDocument='${deliveryId}'&DeliveryDocumentItem='${itemId}'`;
+                                            url = getProxyUrl(url);
+
+                                            // 1. Fetch CSRF Token
+                                            const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                            const tokenUrl = getProxyUrl(`${odBaseUrl}/`);
+                                            const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
+                                            const csrfToken = tokenResponse.headers.get ?
+                                                tokenResponse.headers.get('x-csrf-token') :
+                                                (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+
+                                            if (csrfToken) {
+                                                headers['X-CSRF-Token'] = csrfToken;
+                                            }
+
+                                            // Add If-Match header (required for locking/concurrency)
+                                            if (etag) {
+                                                headers['If-Match'] = etag;
+                                            }
+
+                                            // 2. Perform POST
+                                            const response = await fetch(url, {
+                                                method: 'POST',
+                                                headers
+                                            });
+
+                                            if (!response.ok) {
+                                                const errorText = await response.text();
+                                                throw new Error(`Failed to Pick Item: ${response.status} ${errorText}`);
+                                            }
+                                            return response.json();
+                                        },
+
+                                            updateOutboundDeliveryItem: async (config, deliveryId, itemId, data, etag) => {
+                                                let headers = getHeaders(config);
+                                                const odBaseUrl = api.getODUrl(config);
+                                                // PATCH A_OutbDeliveryItem(DeliveryDocument='...',DeliveryDocumentItem='...')
+                                                let url = `${odBaseUrl}/A_OutbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
+                                                url = getProxyUrl(url);
+
+                                                // Fetch CSRF (cached per service)
+                                                const odCsrfToken = await getCsrfToken(`${odBaseUrl}/`, headers);
+                                                if (odCsrfToken) headers['X-CSRF-Token'] = odCsrfToken;
+
+                                                // Add If-Match header (required for locking/concurrency)
+                                                if (etag) {
+                                                    headers['If-Match'] = etag;
+                                                }
+
+                                                // Perform PATCH
+                                                const response = await fetch(url, {
+                                                    method: 'PATCH',
+                                                    headers,
+                                                    body: JSON.stringify(data)
+                                                });
+
+                                                if (!response.ok) {
+                                                    const errorText = await response.text();
+                                                    if (response.status === 403) invalidateCsrf(`${odBaseUrl}/`);
+                                                    throw new Error(`Failed to Update OD Item: ${response.status} ${errorText}`);
+                                                }
+                                                // PATCH usually returns 204 No Content, so no JSON parsing if empty
+                                                if (response.status === 204) return true;
+                                                return response.json();
+                                            },
+
+                                                postGoodsIssueWithOD: async (config, deliveryId, etag) => {
+                                                    let headers = getHeaders(config);
+                                                    const odBaseUrl = api.getODUrl(config);
+                                                    let url = `${odBaseUrl}/PostGoodsIssue?DeliveryDocument='${deliveryId}'`;
+                                                    url = getProxyUrl(url);
+
+                                                    // Fetch CSRF (cached per service)
+                                                    const giCsrfToken = await getCsrfToken(`${odBaseUrl}/`, headers);
+                                                    if (giCsrfToken) headers['X-CSRF-Token'] = giCsrfToken;
+
+                                                    // Add If-Match header if ETag is provided
+                                                    if (etag) {
+                                                        headers['If-Match'] = etag;
+                                                    }
+
+                                                    // 2. Perform POST (Function Import uses POST)
+                                                    const response = await fetch(url, {
+                                                        method: 'POST',
+                                                        headers
+                                                    });
+
+                                                    if (!response.ok) {
+                                                        const errorText = await response.text();
+                                                        if (response.status === 403) invalidateCsrf(`${odBaseUrl}/`);
+                                                        throw new Error(`Failed to Post GI: ${response.status} ${errorText}`);
+                                                    }
+                                                    return response.json();
+                                                },
+
+                                                    // --- Physical Inventory Methods ---
+
+                                                    getPIUrl: (config) => {
+                                                        let url = config.baseUrl;
+                                                        if (url.includes('/sap/opu/')) {
+                                                            const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                            return `${root}/sap/opu/odata/sap/API_PHYSICAL_INVENTORY_DOC_SRV`;
+                                                        }
+                                                        return url.replace(/API_.*_SRV/i, 'API_PHYSICAL_INVENTORY_DOC_SRV');
+                                                    },
+
+                                                        fetchPIDocs: async (config, top = 20) => {
+                                                            const headers = getHeaders(config);
+                                                            const piBaseUrl = api.getPIUrl(config);
+                                                            // Removed expansion to avoid 404 if navigation property differs in specific version
+                                                            let url = `${piBaseUrl}/A_PhysInventoryDocHeader?$top=${top}&$orderby=PhysicalInventoryDocument desc`;
+                                                            url = getProxyUrl(url);
+
+                                                            const response = await fetch(url, { headers });
+                                                            if (!response.ok) {
+                                                                const errorText = await response.text();
+                                                                throw new Error(`Failed to fetch PIDs: ${response.status} ${errorText}`);
+                                                            }
+                                                            return response.json();
+                                                        },
+
+                                                            fetchPIItems: async (config, fiscalYear, piDoc) => {
+                                                                const headers = getHeaders(config);
+                                                                const piBaseUrl = api.getPIUrl(config);
+                                                                // Navigation 'to_PhysicalInventoryDocItem' failed with 404.
+                                                                // Fallback: Query Item entity set directly with filter
+                                                                let url = `${piBaseUrl}/A_PhysInventoryDocItem?$filter=FiscalYear eq '${fiscalYear}' and PhysicalInventoryDocument eq '${piDoc}'`;
+                                                                console.log('[api] Fetching PI Items:', url);
+                                                                url = getProxyUrl(url);
+
+                                                                const response = await fetch(url, { headers });
+                                                                if (!response.ok) {
+                                                                    const errorText = await response.text();
+                                                                    throw new Error(`Failed to fetch PI Items: ${response.status} ${errorText}`);
+                                                                }
+                                                                return response.json();
+                                                            },
+
+                                                                postPICount: async (config, fiscalYear, piDoc, piItem, quantity, unit, zeroCount = false) => {
+                                                                    let headers = getHeaders(config);
+                                                                    const piBaseUrl = api.getPIUrl(config);
+
+                                                                    // Use PATCH to update the item with the count
+                                                                    let url = `${piBaseUrl}/A_PhysInventoryDocItem(FiscalYear='${fiscalYear}',PhysicalInventoryDocument='${piDoc}',PhysicalInventoryDocumentItem='${piItem}')`;
+                                                                    url = getProxyUrl(url);
+
+                                                                    const payload = {
+                                                                        QuantityInUnitOfEntry: zeroCount ? "0" : `${quantity}`,
+                                                                        UnitOfEntry: unit
+                                                                    };
+
+                                                                    const piCsrfToken = await getCsrfToken(`${piBaseUrl}/`, headers);
+                                                                    if (piCsrfToken) headers['X-CSRF-Token'] = piCsrfToken;
+
+                                                                    // Perform PATCH
+                                                                    const response = await fetch(url, {
+                                                                        method: 'PATCH',
+                                                                        headers,
+                                                                        body: JSON.stringify(payload)
+                                                                    });
+
+                                                                    if (!response.ok) {
+                                                                        const errorText = await response.text();
+                                                                        if (response.status === 403) invalidateCsrf(`${piBaseUrl}/`);
+                                                                        throw new Error(`Failed to Post Count: ${response.status} ${errorText}`);
+                                                                    }
+
+                                                                    // PATCH usually returns 204 No Content
+                                                                    if (response.status === 204) return true;
+                                                                    return response.json();
+                                                                },
+
+                                                                    // --- Stock Overview Methods ---
+
+                                                                    getStockUrl: (config) => {
+                                                                        let url = config.baseUrl;
+                                                                        if (url.includes('/sap/opu/')) {
+                                                                            const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                                            return `${root}/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV`;
+                                                                        }
+                                                                        return url.replace(/API_.*_SRV/i, 'API_MATERIAL_STOCK_SRV');
+                                                                    },
+
+                                                                        // Accepts a filters object: { material, plant, storageLocation }
+                                                                        fetchMaterialStock: async (config, filters = {}, _unused) => {
+                                                                            const headers = getHeaders(config);
+                                                                            const stockBaseUrl = api.getStockUrl(config);
+
+                                                                            // Support both old positional call (config, materialId, plant) and new object call
+                                                                            let material = '', plant = '', storageLocation = '';
+                                                                            if (typeof filters === 'string') {
+                                                                                // legacy positional: fetchMaterialStock(config, materialId, plant)
+                                                                                material = filters;
+                                                                                plant = _unused || '';
+                                                                            } else {
+                                                                                material = filters.material || '';
+                                                                                plant = filters.plant || '';
+                                                                                storageLocation = filters.storageLocation || '';
+                                                                            }
+
+                                                                            const filterParts = [];
+                                                                            if (material) filterParts.push(`Material eq '${material}'`);
+                                                                            if (plant) filterParts.push(`Plant eq '${plant}'`);
+                                                                            if (storageLocation) filterParts.push(`StorageLocation eq '${storageLocation}'`);
+
+                                                                            // Require at least one filter to avoid massive result sets
+                                                                            if (filterParts.length === 0) {
+                                                                                filterParts.push("MatlWrhsStkQtyInMatlBaseUnit gt 0");
+                                                                            }
+
+                                                                            const matStockUrl = `${stockBaseUrl}/A_MatlStkInAcctMod?$filter=${encodeURIComponent(filterParts.join(' and '))}&$top=200`;
+                                                                            let url = getProxyUrl(matStockUrl);
+
+                                                                            const response = await fetch(url, { headers });
+                                                                            if (!response.ok) {
+                                                                                const t = await response.text();
+                                                                                throw new Error(parseSapError(response.status, t));
+                                                                            }
+                                                                            return response.json();
+                                                                        },
+
+                                                                            // --- IM Stock Transfer (Goods Movement) ---
+
+                                                                            getMatDocUrl: (config) => {
+                                                                                let url = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                if (url.includes('/sap/opu/')) {
+                                                                                    const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                                                    return `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV`;
+                                                                                }
+                                                                                return url.replace(/API_[A-Z0-9_]+_SRV/i, 'API_MATERIAL_DOCUMENT_SRV');
+                                                                            },
+
+                                                                                // Post an IM goods movement (mvt 311 = SLoc-to-SLoc, mvt 301 = Plant-to-Plant)
+                                                                                // item fields: { Material, Plant, StorageLocation, GoodsMovementType, EntryUnit,
+                                                                                //               QuantityInEntryUnit, DestinationPlant?, DestinationStorageLocation? }
+                                                                                // SAP API_MATERIAL_DOCUMENT_SRV uses IssuingOrReceivingPlant / IssuingOrReceivingStorageLocation
+                                                                                postGoodsMovement: async (config, items) => {
+                                                                                    let headers = getHeaders(config);
+                                                                                    const matDocUrl = api.getMatDocUrl(config);
+
+                                                                                    // Fetch CSRF (cached per service)
+                                                                                    const movCsrfToken = await getCsrfToken(`${matDocUrl}/`, headers);
+                                                                                    if (movCsrfToken) headers['X-CSRF-Token'] = movCsrfToken;
+
+                                                                                    // 2. Build payload
+                                                                                    // SAP API_MATERIAL_DOCUMENT_SRV field names for destination:
+                                                                                    //   IssuingOrReceivingPlant           = destination plant (for mvt 301)
+                                                                                    //   IssuingOrReceivingStorageLocation  = destination storage location (for mvt 301/311)
+                                                                                    const payload = {
+                                                                                        GoodsMovementCode: '04',
+                                                                                        to_MaterialDocumentItem: {
+                                                                                            results: items.map((item) => {
+                                                                                                const docItem = {
+                                                                                                    Material: item.Material,
+                                                                                                    Plant: item.Plant,
+                                                                                                    StorageLocation: item.StorageLocation,
+                                                                                                    GoodsMovementType: item.GoodsMovementType,
+                                                                                                    EntryUnit: item.EntryUnit || item.MaterialBaseUnit || 'EA',
+                                                                                                    QuantityInEntryUnit: String(parseFloat(item.QuantityInEntryUnit || 1)),
+                                                                                                    // Use SAP's correct field names for the receiving side
+                                                                                                    ...(item.DestinationPlant ? { IssuingOrReceivingPlant: item.DestinationPlant } : {}),
+                                                                                                    ...(item.DestinationStorageLocation ? { IssuingOrReceivingStorageLocation: item.DestinationStorageLocation } : {}),
+                                                                                                };
+                                                                                                // Batch
+                                                                                                if (item.Batch && item.Batch.trim()) docItem.Batch = item.Batch.trim();
+                                                                                                // Serial Numbers — deep-insert via to_SerialNumber navigation
+                                                                                                if (item.SerialNumbers && item.SerialNumbers.length > 0) {
+                                                                                                    const validSerials = item.SerialNumbers.filter(s => s && s.trim());
+                                                                                                    if (validSerials.length > 0) {
+                                                                                                        docItem.to_SerialNumber = {
+                                                                                                            results: validSerials.map(sn => ({ SerialNumber: sn.trim() }))
+                                                                                                        };
+                                                                                                    }
+                                                                                                }
+                                                                                                return docItem;
+                                                                                            })
+                                                                                        }
+                                                                                    };
+
+                                                                                    // 3. POST
+                                                                                    const postUrl = getProxyUrl(`${matDocUrl}/A_MaterialDocumentHeader`);
+                                                                                    const resp = await fetch(postUrl, { method: 'POST', headers, body: JSON.stringify(payload) });
+                                                                                    if (!resp.ok) {
+                                                                                        const t = await resp.text();
+                                                                                        if (resp.status === 403) invalidateCsrf(`${matDocUrl}/`);
+                                                                                        throw new Error(parseSapError(resp.status, t));
+                                                                                    }
+                                                                                    return resp.json();
+                                                                                }
+                                                                                    ,
+
+                                                                                    // Fetch material document items for a given PO to check already-issued quantities (e.g. mvt 351 in-transit)
+                                                                                    // Returns array of matdoc items with PurchaseOrder, PurchaseOrderItem, QuantityInEntryUnit, GoodsMovementType
+                                                                                    fetchMaterialDocumentItemsByPO: async (config, purchaseOrder, movementType = '351') => {
+                                                                                        const headers = getHeaders(config);
+                                                                                        let matDocUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                        if (matDocUrl.includes('/sap/opu/')) {
+                                                                                            const root = matDocUrl.substring(0, matDocUrl.indexOf('/sap/opu/'));
+                                                                                            matDocUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV`;
+                                                                                        }
+                                                                                        // Query A_MaterialDocumentItem filtered by PO + movement type
+                                                                                        const filter = `PurchaseOrder eq '${purchaseOrder}' and GoodsMovementType eq '${movementType}'`;
+                                                                                        const url = getProxyUrl(`${matDocUrl}/A_MaterialDocumentItem?$filter=${encodeURIComponent(filter)}&$select=PurchaseOrder,PurchaseOrderItem,QuantityInEntryUnit,EntryUnit,GoodsMovementType,MaterialDocument,MaterialDocumentYear`);
+                                                                                        const response = await fetch(url, { headers });
+                                                                                        if (!response.ok) {
+                                                                                            console.warn('[fetchMaterialDocumentItemsByPO] non-ok response:', response.status);
+                                                                                            return []; // non-fatal: fall back to no restriction
+                                                                                        }
+                                                                                        const json = await response.json();
+                                                                                        return json.d ? (json.d.results || []) : (json.value || []);
+                                                                                    },
+
+                                                                                        // --- Inbound Delivery Methods ---
+
+                                                                                        getIBDUrl: (config) => {
+                                                                                            let url = config.baseUrl;
+                                                                                            if (url.includes('/sap/opu/')) {
+                                                                                                const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                                                                return `${root}/sap/opu/odata/sap/API_INBOUND_DELIVERY_SRV;v=0002`;
+                                                                                            }
+                                                                                            return url.replace(/API_.*_SRV/i, 'API_INBOUND_DELIVERY_SRV;v=0002');
+                                                                                        },
+
+                                                                                            fetchInboundDeliveries: async (config, top = 20, filters = {}) => {
+                                                                                                const cacheKey = `IBD_${JSON.stringify(filters)}_${top}`;
+                                                                                                if (_masterDataCache.deliveryHeaders[cacheKey]) return _masterDataCache.deliveryHeaders[cacheKey];
+
+                                                                                                const headers = getHeaders(config);
+                                                                                                const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                const hasFilters = !!(filters.deliveryNumber || filters.supplier || filters.dateFrom || filters.dateTo);
+                                                                                                const filterParts = [];
+                                                                                                if (filters.deliveryNumber) filterParts.push(`DeliveryDocument eq '${sanitizeODataStr(filters.deliveryNumber.trim())}'`);
+                                                                                                if (filters.supplier) filterParts.push(`substringof('${sanitizeODataStr(filters.supplier.trim().toUpperCase())}',Supplier)`);
+                                                                                                if (filters.dateFrom) filterParts.push(`DeliveryDate ge datetime'${filters.dateFrom}T00:00:00'`);
+                                                                                                if (filters.dateTo) filterParts.push(`DeliveryDate le datetime'${filters.dateTo}T23:59:59'`);
+                                                                                                const filterQuery = filterParts.length > 0 ? `&$filter=${encodeURIComponent(filterParts.join(' and '))}` : '';
+                                                                                                // Omit $expand on filtered calls to avoid large payloads
+                                                                                                const expandClause = hasFilters ? '' : '&$expand=to_DeliveryDocumentItem';
+                                                                                                let url = `${ibdBaseUrl}/A_InbDeliveryHeader?$top=${top}&$orderby=DeliveryDocument desc${expandClause}${filterQuery}`;
+                                                                                                url = getProxyUrl(url);
+
+                                                                                                const response = await fetch(url, { headers });
+                                                                                                if (!response.ok) {
+                                                                                                    const errorText = await response.text();
+                                                                                                    throw new Error(`Failed to fetch Inbound Deliveries: ${response.status} ${errorText}`);
+                                                                                                }
+                                                                                                const json = await response.json();
+                                                                                                _masterDataCache.deliveryHeaders[cacheKey] = json;
+                                                                                                return json;
+                                                                                            },
+
+                                                                                                updateInboundDeliveryHeader: async (config, deliveryId, payload, etag) => {
+                                                                                                    let headers = getHeaders(config);
+                                                                                                    const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                    let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`;
+                                                                                                    url = getProxyUrl(url);
+
+                                                                                                    if (etag) {
+                                                                                                        headers['If-Match'] = etag;
+                                                                                                    }
+
+                                                                                                    const response = await fetch(url, {
+                                                                                                        method: 'PATCH',
+                                                                                                        headers,
+                                                                                                        body: JSON.stringify(payload)
+                                                                                                    });
+
+                                                                                                    if (!response.ok) {
+                                                                                                        const errorText = await response.text();
+                                                                                                        throw new Error(`Failed to update IBD Header: ${response.status} ${errorText}`);
+                                                                                                    }
+
+                                                                                                    // Return 204 or body. If 204, return empty object.
+                                                                                                    if (response.status === 204) return { success: true };
+                                                                                                    return response.json(); // Some configs return 200 with data
+                                                                                                },
+
+                                                                                                    fetchInboundDelivery: async (config, deliveryId) => {
+                                                                                                        const headers = getHeaders(config);
+                                                                                                        const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                        let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`;
+                                                                                                        url = getProxyUrl(url);
+
+                                                                                                        const response = await fetch(url, { headers });
+                                                                                                        if (!response.ok) {
+                                                                                                            const errorText = await response.text();
+                                                                                                            throw new Error(`Failed to fetch IBD Header: ${response.status} ${errorText}`);
+                                                                                                        }
+                                                                                                        return response.json();
+                                                                                                    },
+
+                                                                                                        fetchInboundDeliveryItems: async (config, deliveryId) => {
+                                                                                                            const headers = getHeaders(config);
+                                                                                                            const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                            // Expand Document Flow to get Putaway/Picking quantities
+                                                                                                            let url = `${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')/to_DeliveryDocumentItem?$expand=to_DocumentFlow`;
+                                                                                                            url = getProxyUrl(url);
+
+                                                                                                            const response = await fetch(url, { headers });
+                                                                                                            if (!response.ok) {
+                                                                                                                const errorText = await response.text();
+                                                                                                                throw new Error(`Failed to fetch IBD Items: ${response.status} ${errorText}`);
+                                                                                                            }
+                                                                                                            return response.json();
+                                                                                                        },
+
+                                                                                                            fetchInboundDeliveryItem: async (config, deliveryId, itemId) => {
+                                                                                                                const headers = getHeaders(config);
+                                                                                                                const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                                let url = `${ibdBaseUrl}/A_InbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
+                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                if (!response.ok) {
+                                                                                                                    const errorText = await response.text();
+                                                                                                                    throw new Error(`Failed to fetch IBD Item: ${response.status} ${errorText}`);
+                                                                                                                }
+                                                                                                                return response.json();
+                                                                                                            },
+
+                                                                                                                updateInboundDeliveryItem: async (config, deliveryId, itemId, data, etag) => {
+                                                                                                                    let headers = getHeaders(config);
+                                                                                                                    const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                                    // PATCH A_InbDeliveryItem(DeliveryDocument='...',DeliveryDocumentItem='...')
+                                                                                                                    let url = `${ibdBaseUrl}/A_InbDeliveryItem(DeliveryDocument='${deliveryId}',DeliveryDocumentItem='${itemId}')`;
+                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                    // Fetch CSRF (cached per service)
+                                                                                                                    const ibdCsrfToken = await getCsrfToken(`${ibdBaseUrl}/`, headers);
+                                                                                                                    if (ibdCsrfToken) headers['X-CSRF-Token'] = ibdCsrfToken;
+
+                                                                                                                    if (etag) { // If-Match
+                                                                                                                        headers['If-Match'] = etag;
+                                                                                                                    }
+
+                                                                                                                    // Perform PATCH
+                                                                                                                    const response = await fetch(url, {
+                                                                                                                        method: 'PATCH',
+                                                                                                                        headers,
+                                                                                                                        body: JSON.stringify(data)
+                                                                                                                    });
+
+                                                                                                                    if (!response.ok) {
+                                                                                                                        const errorText = await response.text();
+                                                                                                                        if (response.status === 403) invalidateCsrf(`${ibdBaseUrl}/`);
+                                                                                                                        throw new Error(`Failed to Update IBD Item: ${response.status} ${errorText}`);
+                                                                                                                    }
+
+                                                                                                                    const newEtag = response.headers.get('etag') || response.headers.get('ETag');
+
+                                                                                                                    if (response.status === 204) {
+                                                                                                                        return { success: true, etag: newEtag };
+                                                                                                                    }
+                                                                                                                    const json = await response.json();
+                                                                                                                    return { ...json, etag: newEtag };
+                                                                                                                },
+
+                                                                                                                    putawayInboundDeliveryItem: async (config, deliveryId, itemId, etag) => {
+                                                                                                                        let headers = getHeaders(config);
+                                                                                                                        const ibdBaseUrl = api.getIBDUrl(config);
+
+                                                                                                                        // Function Import: /PutawayOneItem?DeliveryDocument='...'&DeliveryDocumentItem='...'
+                                                                                                                        const url = getProxyUrl(`${ibdBaseUrl}/PutawayOneItem?DeliveryDocument='${deliveryId}'&DeliveryDocumentItem='${itemId}'`);
+
+                                                                                                                        // 1. Fetch CSRF Token
+                                                                                                                        try {
+                                                                                                                            const tokenUrl = getProxyUrl(`${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`);
+                                                                                                                            const tokenResp = await fetch(tokenUrl, {
+                                                                                                                                method: 'GET',
+                                                                                                                                headers: { ...headers, 'X-CSRF-Token': 'Fetch' }
+                                                                                                                            });
+                                                                                                                            const token = tokenResp.headers.get('x-csrf-token')
+                                                                                                                                || tokenResp.headers.get('X-CSRF-Token')
+                                                                                                                                || tokenResp.headers.get('X-Csrf-Token');
+                                                                                                                            await tokenResp.text(); // consume body
+                                                                                                                            if (token) {
+                                                                                                                                headers['X-CSRF-Token'] = token;
+                                                                                                                            }
+                                                                                                                        } catch (e) {
+                                                                                                                            console.warn("Failed to fetch fresh CSRF token:", e);
+                                                                                                                        }
+
+                                                                                                                        // 2. Add If-Match (ETag) if provided (Required for 428 Precondition Required)
+                                                                                                                        if (etag) {
+                                                                                                                            headers['If-Match'] = etag;
+                                                                                                                        }
+
+                                                                                                                        const response = await fetch(url, {
+                                                                                                                            method: 'POST',
+                                                                                                                            headers
+                                                                                                                        });
+
+                                                                                                                        if (!response.ok) {
+                                                                                                                            const errorText = await response.text();
+                                                                                                                            // Ignore "No change" errors if status is success-like
+                                                                                                                            if (response.status !== 204 && response.status !== 200) {
+                                                                                                                                console.warn("PutawayOneItem warning/error:", errorText);
+                                                                                                                                // Don't throw if it's just a warning or redundant call, but throw if real error?
+                                                                                                                                // For now, let's treat 4xx as error
+                                                                                                                                if (response.status >= 400) {
+                                                                                                                                    // Sometimes 412 is returned if ETag mismatch, but we handle that in caller.
+                                                                                                                                    throw new Error(`Putaway Action Failed: ${response.status}`);
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                        return { success: true };
+                                                                                                                    },
+
+                                                                                                                        fetchInboundDeliveryDocFlow: async (config, deliveryId) => {
+                                                                                                                            const headers = getHeaders(config);
+                                                                                                                            const ibdBaseUrl = api.getIBDUrl(config);
+                                                                                                                            let url = `${ibdBaseUrl}/A_InbDeliveryDocFlow?$filter=PrecedingDocument eq '${deliveryId}'`;
+                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                            if (!response.ok) {
+                                                                                                                                // It's possible DocFlow is not supported or returns error if empty?
+                                                                                                                                // Should be fine to return empty list if 404
+                                                                                                                                const txt = await response.text();
+                                                                                                                                console.warn("DocFlow fetch failed:", txt);
+                                                                                                                                return { d: { results: [] } };
+                                                                                                                            }
+                                                                                                                            return response.json();
+                                                                                                                        },
+
+                                                                                                                            fetchMaterialDocumentsForIBD: async (config, deliveryId) => {
+                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                // Use API_MATERIAL_DOCUMENT_SRV
+                                                                                                                                // Assuming baseUrl points to standard root, we construct the service URL
+                                                                                                                                let url = config.baseUrl;
+                                                                                                                                if (url.includes('/sap/opu/')) {
+                                                                                                                                    const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                                                                                                    url = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentItem`;
+                                                                                                                                } else {
+                                                                                                                                    // Fallback/Local replace
+                                                                                                                                    url = url.replace(/API_.*_SRV/i, 'API_MATERIAL_DOCUMENT_SRV') + '/A_MaterialDocumentItem';
+                                                                                                                                }
+
+                                                                                                                                url = `${url}?$filter=Delivery eq '${deliveryId}'`;
+                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                if (!response.ok) {
+                                                                                                                                    // If service not found or empty, return empty list gracefully?
+                                                                                                                                    // But if specific error, throw
+                                                                                                                                    const txt = await response.text();
+                                                                                                                                    console.warn("Matches for MatDoc failed:", txt);
+                                                                                                                                    return { d: { results: [] } };
+                                                                                                                                }
+                                                                                                                                return response.json();
+                                                                                                                            },
+
+
+                                                                                                                                postGoodsReceiptForIBD: async (config, deliveryId, etag, correctDate) => {
+                                                                                                                                    let headers = getHeaders(config);
+                                                                                                                                    const ibdBaseUrl = api.getIBDUrl(config);
+
+                                                                                                                                    const ibdGRCsrfToken = await getCsrfToken(`${ibdBaseUrl}/`, headers);
+                                                                                                                                    if (ibdGRCsrfToken) headers['X-CSRF-Token'] = ibdGRCsrfToken;
+
+                                                                                                                                    // Fetch fresh ETag from the delivery header to avoid 412 stale ETag errors
+                                                                                                                                    let freshEtag = etag;
+                                                                                                                                    try {
+                                                                                                                                        const headerUrl = getProxyUrl(`${ibdBaseUrl}/A_InbDeliveryHeader('${deliveryId}')`);
+                                                                                                                                        console.log("Fetching fresh ETag from:", headerUrl);
+                                                                                                                                        const headerResponse = await fetch(headerUrl, {
+                                                                                                                                            method: 'GET',
+                                                                                                                                            headers: { ...headers, 'Accept': 'application/json' }
+                                                                                                                                        });
+                                                                                                                                        if (headerResponse.ok) {
+                                                                                                                                            freshEtag = headerResponse.headers.get
+                                                                                                                                                ? headerResponse.headers.get('etag')
+                                                                                                                                                : headerResponse.headers['etag'];
+                                                                                                                                        }
+                                                                                                                                    } catch (etagErr) {
+                                                                                                                                        console.warn('[api] Could not fetch fresh ETag, using provided one:', etagErr);
+                                                                                                                                    }
+
+                                                                                                                                    // 3. Build the PostGoodsReceipt URL
+                                                                                                                                    // Function Import: /PostGoodsReceipt?DeliveryDocument='...'
+                                                                                                                                    let url = `${ibdBaseUrl}/PostGoodsReceipt?DeliveryDocument='${deliveryId}'`;
+
+                                                                                                                                    // Append Date param if provided (for M7/053 fix)
+                                                                                                                                    if (correctDate) {
+                                                                                                                                        url += `&ActualGoodsMovementDate=datetime'${correctDate}'`;
+                                                                                                                                    }
+
+                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                    // Add If-Match with fresh ETag (Crucial for 428/412 errors)
+                                                                                                                                    if (freshEtag) {
+                                                                                                                                        headers['If-Match'] = freshEtag;
+                                                                                                                                    }
+
+                                                                                                                                    // Perform POST
+                                                                                                                                    const response = await fetch(url, {
+                                                                                                                                        method: 'POST',
+                                                                                                                                        headers
+                                                                                                                                    });
+
+                                                                                                                                    if (!response.ok) {
+                                                                                                                                        const errorText = await response.text();
+                                                                                                                                        if (response.status === 403) invalidateCsrf(`${ibdBaseUrl}/`);
+                                                                                                                                        throw new Error(`Failed to Post GR for IBD: ${response.status} ${errorText}`);
+                                                                                                                                    }
+                                                                                                                                    return response.json();
+                                                                                                                                },
+
+                                                                                                                                    // --- Stock Overview Methods ---
+
+                                                                                                                                    fetchMaterialStock: async (config, filters) => {
+                                                                                                                                        const headers = getHeaders(config);
+
+                                                                                                                                        // Handle both old (string) and new (object) API
+                                                                                                                                        let material = '', plant = '', storageLocation = '';
+                                                                                                                                        if (typeof filters === 'string') {
+                                                                                                                                            material = filters;
+                                                                                                                                        } else {
+                                                                                                                                            material = filters.material || '';
+                                                                                                                                            plant = filters.plant || '';
+                                                                                                                                            storageLocation = filters.storageLocation || '';
+                                                                                                                                        }
+
+                                                                                                                                        // Build the API_MATERIAL_STOCK_SRV URL
+                                                                                                                                        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                        if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                            baseUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV`;
+                                                                                                                                        } else if (baseUrl.includes('api.s4hana.cloud.sap')) {
+                                                                                                                                            // S/4HANA Cloud API
+                                                                                                                                            baseUrl = baseUrl.replace(/\/API_.*_SRV/i, '/API_MATERIAL_STOCK_SRV');
+                                                                                                                                        } else {
+                                                                                                                                            baseUrl = baseUrl.replace('API_PURCHASEREQUISITION_PROCESS_SRV', 'API_MATERIAL_STOCK_SRV');
+                                                                                                                                        }
+
+                                                                                                                                        // Build filter conditions dynamically
+                                                                                                                                        const filterParts = [];
+                                                                                                                                        if (material) {
+                                                                                                                                            filterParts.push(`substringof('${material}', Material)`);
+                                                                                                                                        }
+                                                                                                                                        if (plant) {
+                                                                                                                                            filterParts.push(`Plant eq '${plant}'`);
+                                                                                                                                        }
+                                                                                                                                        if (storageLocation) {
+                                                                                                                                            filterParts.push(`StorageLocation eq '${storageLocation}'`);
+                                                                                                                                        }
+
+                                                                                                                                        const filter = filterParts.length > 0 ? filterParts.join(' and ') : '';
+                                                                                                                                        let url = `${baseUrl}/A_MatlStkInAcctMod?$top=100`;
+                                                                                                                                        if (filter) {
+                                                                                                                                            url += `&$filter=${encodeURIComponent(filter)}`;
+                                                                                                                                        }
+                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                        console.log("Fetching Material Stock:", url);
+
+                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                        if (!response.ok) {
+                                                                                                                                            const errorText = await response.text();
+                                                                                                                                            throw new Error(`Failed to fetch Material Stock: ${response.status} ${errorText}`);
+                                                                                                                                        }
+                                                                                                                                        return response.json();
+                                                                                                                                    },
+
+                                                                                                                                        // --- Reservation Document Methods (GI Against Reservation) ---
+
+                                                                                                                                        getReservationUrl: (config) => {
+                                                                                                                                            let url = config.baseUrl;
+                                                                                                                                            if (url.includes('/sap/opu/')) {
+                                                                                                                                                const root = url.substring(0, url.indexOf('/sap/opu/'));
+                                                                                                                                                return `${root}/sap/opu/odata/sap/API_RESERVATION_DOCUMENT_SRV`;
+                                                                                                                                            }
+                                                                                                                                            return url.replace(/API_.*_SRV/i, 'API_RESERVATION_DOCUMENT_SRV');
+                                                                                                                                        },
+
+                                                                                                                                            /**
+                                                                                                                                             * Fetch list of plants for dropdown value-help.
+                                                                                                                                             * Uses CE_PLANT_0001-v1 (Service Group: API_PLANT_2, OData V4).
+                                                                                                                                             * URL: /sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant
+                                                                                                                                             */
+                                                                                                                                            fetchPlantList: async (config) => {
+                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                let root = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                if (root.includes('/sap/opu/')) {
+                                                                                                                                                    root = root.substring(0, root.indexOf('/sap/opu/'));
+                                                                                                                                                } else if (root.includes('/sap/')) {
+                                                                                                                                                    root = root.substring(0, root.indexOf('/sap/'));
+                                                                                                                                                }
+                                                                                                                                                // OData V4 endpoint for Plant Configuration (CE_PLANT_0001)
+                                                                                                                                                let url = `${root}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001/Plant?$top=200&$select=Plant,PlantName&$orderby=Plant asc`;
+                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                                if (!response.ok) {
+                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                }
+                                                                                                                                                // OData V4 returns { value: [...] } directly (no d.results wrapper)
+                                                                                                                                                return response.json();
+                                                                                                                                            },
+
+                                                                                                                                                fetchReservations: async (config, top = 30, filters = {}) => {
+                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                    const resBaseUrl = api.getReservationUrl(config);
+
+                                                                                                                                                    const filterClauses = [];
+                                                                                                                                                    if (filters.reservation && filters.reservation.trim()) {
+                                                                                                                                                        const padded = filters.reservation.trim().padStart(10, '0');
+                                                                                                                                                        filterClauses.push(`Reservation eq '${padded}'`);
+                                                                                                                                                    }
+                                                                                                                                                    if (filters.costCenter && filters.costCenter.trim()) {
+                                                                                                                                                        filterClauses.push(`CostCenter eq '${filters.costCenter.trim().toUpperCase()}'`);
+                                                                                                                                                    }
+                                                                                                                                                    if (filters.orderID && filters.orderID.trim()) {
+                                                                                                                                                        filterClauses.push(`OrderID eq '${filters.orderID.trim()}'`);
+                                                                                                                                                    }
+
+                                                                                                                                                    // Handle Plant filter (Plant is an item-level field)
+                                                                                                                                                    // We first query A_ReservationDocumentItem to get matching Reservation IDs,
+                                                                                                                                                    // then append them as an OR clause to the header query.
+                                                                                                                                                    if (filters.plant && filters.plant.trim()) {
+                                                                                                                                                        const plantStr = filters.plant.trim().toUpperCase();
+
+                                                                                                                                                        let itemFilter = `Plant eq '${plantStr}'`;
+                                                                                                                                                        if (filters.reservation && filters.reservation.trim()) {
+                                                                                                                                                            const padded = filters.reservation.trim().padStart(10, '0');
+                                                                                                                                                            itemFilter += ` and Reservation eq '${padded}'`;
+                                                                                                                                                        }
+
+                                                                                                                                                        // Only fetch top 50 to avoid creating an excessively long URL for the header query
+                                                                                                                                                        let itemUrl = `${resBaseUrl}/A_ReservationDocumentItem?$filter=${itemFilter}&$select=Reservation&$top=50`;
+                                                                                                                                                        itemUrl = getProxyUrl(itemUrl);
+
+                                                                                                                                                        const itemRes = await fetch(itemUrl, { headers });
+                                                                                                                                                        if (!itemRes.ok) {
+                                                                                                                                                            const errText = await itemRes.text();
+                                                                                                                                                            throw new Error(parseSapError(itemRes.status, errText));
+                                                                                                                                                        }
+                                                                                                                                                        const itemJson = await itemRes.json();
+                                                                                                                                                        const items = itemJson.d ? itemJson.d.results : (itemJson.value || []);
+                                                                                                                                                        const resNumbers = [...new Set(items.map(i => i.Reservation))];
+
+                                                                                                                                                        if (resNumbers.length === 0) {
+                                                                                                                                                            // If no items match the plant, return empty early without hitting the header endpoint
+                                                                                                                                                            return { d: { results: [] }, value: [] };
+                                                                                                                                                        }
+
+                                                                                                                                                        // Build an OR clause for the headers
+                                                                                                                                                        const resOrs = resNumbers.map(r => `Reservation eq '${r}'`);
+                                                                                                                                                        filterClauses.push(`(${resOrs.join(' or ')})`);
+                                                                                                                                                    }
+
+                                                                                                                                                    let url = `${resBaseUrl}/A_ReservationDocumentHeader?$top=${top}&$orderby=Reservation desc&$expand=to_ReservationDocumentItem`;
+                                                                                                                                                    if (filterClauses.length > 0) {
+                                                                                                                                                        url += `&$filter=${filterClauses.join(' and ')}`;
+                                                                                                                                                    }
+                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                    }
+                                                                                                                                                    const json = await response.json();
+
+                                                                                                                                                    // Client-side plant filter: keep only reservations whose items contain the target plant
+                                                                                                                                                    if (filters.plant && filters.plant.trim()) {
+                                                                                                                                                        const targetPlant = filters.plant.trim().toUpperCase();
+                                                                                                                                                        const results = json.d ? json.d.results : (json.value || []);
+                                                                                                                                                        const filtered = results.filter(res => {
+                                                                                                                                                            const items = res.to_ReservationDocumentItem?.results || [];
+                                                                                                                                                            return items.some(item => (item.Plant || '').toUpperCase() === targetPlant);
+                                                                                                                                                        });
+                                                                                                                                                        if (json.d) {
+                                                                                                                                                            json.d.results = filtered;
+                                                                                                                                                        } else {
+                                                                                                                                                            json.value = filtered;
+                                                                                                                                                        }
+                                                                                                                                                    }
+
+                                                                                                                                                    return json;
+                                                                                                                                                },
+
+                                                                                                                                                    fetchReservationItems: async (config, reservation) => {
+                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                        const resBaseUrl = api.getReservationUrl(config);
+                                                                                                                                                        // Query items for a specific reservation
+                                                                                                                                                        let url = `${resBaseUrl}/A_ReservationDocumentItem?$filter=Reservation eq '${reservation}'`;
+                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                        }
+                                                                                                                                                        return response.json();
+                                                                                                                                                    },
+
+                                                                                                                                                        /**
+                                                                                                                                                         * Post Goods Issue against Reservation via API_MATERIAL_DOCUMENT_SRV
+                                                                                                                                                         * @param {Object} config - API configuration
+                                                                                                                                                         * @param {Array} items - Array of items to post, each with:
+                                                                                                                                                         *   { Material, Plant, StorageLocation, QuantityInEntryUnit, EntryUnit, Reservation, ReservationItem, GoodsMovementType }
+                                                                                                                                                         * @returns {Promise<Object>} - Created Material Document response
+                                                                                                                                                         */
+                                                                                                                                                        postGoodsIssueForReservation: async (config, items, movementCode = '03') => {
+                                                                                                                                                            let headers = getHeaders(config);
+
+                                                                                                                                                            // Construct API_MATERIAL_DOCUMENT_SRV URL
+                                                                                                                                                            let matDocUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                            if (matDocUrl.includes('/sap/opu/')) {
+                                                                                                                                                                const root = matDocUrl.substring(0, matDocUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                matDocUrl = `${root}/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV`;
+                                                                                                                                                            } else {
+                                                                                                                                                                matDocUrl = matDocUrl.replace('API_PURCHASEREQUISITION_PROCESS_SRV', 'API_MATERIAL_DOCUMENT_SRV')
+                                                                                                                                                                    .replace('purchaserequisition', 'API_MATERIAL_DOCUMENT_SRV');
+                                                                                                                                                            }
+
+                                                                                                                                                            let url = `${matDocUrl}/A_MaterialDocumentHeader`;
+                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                            // Create posting date in SAP OData format
+                                                                                                                                                            const now = new Date();
+                                                                                                                                                            const sapDate = `/Date(${now.getTime()})/`;
+
+                                                                                                                                                            // Build payload
+                                                                                                                                                            const payload = {
+                                                                                                                                                                PostingDate: sapDate,
+                                                                                                                                                                DocumentDate: sapDate,
+                                                                                                                                                                GoodsMovementCode: movementCode,
+                                                                                                                                                                to_MaterialDocumentItem: items.map((item, idx) => {
+                                                                                                                                                                    const docItem = {
+                                                                                                                                                                        // Note: MaterialDocumentItem must NOT be sent — SAP assigns it automatically
+                                                                                                                                                                        GoodsMovementType: item.GoodsMovementType || '261',
+                                                                                                                                                                        Material: item.Material,
+                                                                                                                                                                        Plant: item.Plant,
+                                                                                                                                                                        StorageLocation: item.StorageLocation,
+                                                                                                                                                                        QuantityInEntryUnit: String(item.QuantityInEntryUnit),
+                                                                                                                                                                        EntryUnit: item.EntryUnit || item.BaseUnit || 'EA',
+                                                                                                                                                                        ReservationIsFinallyIssued: item.IsFinalIssue || false,
+                                                                                                                                                                    };
+                                                                                                                                                                    // Reservation reference (GI for Reservation)
+                                                                                                                                                                    if (item.Reservation) docItem.Reservation = item.Reservation;
+                                                                                                                                                                    if (item.ReservationItem) docItem.ReservationItem = item.ReservationItem;
+                                                                                                                                                                    // STO/PO reference (GI for STO)
+                                                                                                                                                                    if (item.PurchaseOrder) docItem.PurchaseOrder = item.PurchaseOrder;
+                                                                                                                                                                    if (item.PurchaseOrderItem) docItem.PurchaseOrderItem = item.PurchaseOrderItem;
+                                                                                                                                                                    // Batch
+                                                                                                                                                                    if (item.Batch && item.Batch.trim()) docItem.Batch = item.Batch.trim();
+                                                                                                                                                                    // Serial Numbers — deep-insert via to_SerialNumber navigation
+                                                                                                                                                                    if (item.SerialNumbers && item.SerialNumbers.length > 0) {
+                                                                                                                                                                        const validSerials = item.SerialNumbers.filter(s => s && s.trim());
+                                                                                                                                                                        if (validSerials.length > 0) {
+                                                                                                                                                                            docItem.to_SerialNumber = {
+                                                                                                                                                                                results: validSerials.map(sn => ({ SerialNumber: sn.trim() }))
+                                                                                                                                                                            };
+                                                                                                                                                                        }
+                                                                                                                                                                    }
+                                                                                                                                                                    return docItem;
+                                                                                                                                                                })
+                                                                                                                                                            };
+
+                                                                                                                                                            // Fetch CSRF (cached per service)
+                                                                                                                                                            const resCsrfToken = await getCsrfToken(`${matDocUrl}/`, headers);
+                                                                                                                                                            if (resCsrfToken) headers['X-CSRF-Token'] = resCsrfToken;
+
+                                                                                                                                                            // Perform POST
+                                                                                                                                                            const response = await fetch(url, {
+                                                                                                                                                                method: 'POST',
+                                                                                                                                                                headers,
+                                                                                                                                                                body: JSON.stringify(payload)
+                                                                                                                                                            });
+
+                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                if (response.status === 403) invalidateCsrf(`${matDocUrl}/`);
+                                                                                                                                                                throw new Error(`Failed to Post GI for Reservation: ${response.status} ${errorText}`);
+                                                                                                                                                            }
+                                                                                                                                                            return response.json();
+                                                                                                                                                        },
+
+                                                                                                                                                            // ============================================
+                                                                                                                                                            // WAREHOUSE CONFIGURATION APIs (OData V4 A2X)
+                                                                                                                                                            // ============================================
+
+                                                                                                                                                            fetchStorageTypes: async (config, warehouse) => {
+                                                                                                                                                                if (_masterDataCache.storageTypes[warehouse]) return _masterDataCache.storageTypes[warehouse];
+
+                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                const baseUrl = config.baseUrl;
+                                                                                                                                                                let root;
+                                                                                                                                                                if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                    root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                } else {
+                                                                                                                                                                    root = new URL(baseUrl).origin;
+                                                                                                                                                                }
+
+                                                                                                                                                                let url = `${root}/sap/opu/odata4/sap/api_warehouse_2/srvd_a2x/sap/warehouse/0001/WarehouseStorageType?$filter=EWMWarehouse eq '${warehouse}'&$top=100`;
+                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                try {
+                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                    if (!response.ok) return { value: [] };
+                                                                                                                                                                    const json = await response.json();
+                                                                                                                                                                    _masterDataCache.storageTypes[warehouse] = json;
+                                                                                                                                                                    return json;
+                                                                                                                                                                } catch (err) {
+                                                                                                                                                                    console.error("Error fetching Storage Types:", err);
+                                                                                                                                                                    return { value: [] };
+                                                                                                                                                                }
+                                                                                                                                                            },
+
+                                                                                                                                                                fetchStorageBins: async (config, warehouse, storageType = '') => {
+                                                                                                                                                                    const cacheKey = `${warehouse}_${storageType}`;
+                                                                                                                                                                    if (_masterDataCache.storageBins[cacheKey]) return _masterDataCache.storageBins[cacheKey];
+
+                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                    const baseUrl = config.baseUrl;
+                                                                                                                                                                    let root;
+                                                                                                                                                                    if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                        root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                    } else {
+                                                                                                                                                                        root = new URL(baseUrl).origin;
+                                                                                                                                                                    }
+
+                                                                                                                                                                    let filter = `EWMWarehouse eq '${warehouse}'`;
+                                                                                                                                                                    if (storageType) {
+                                                                                                                                                                        filter += ` and EWMStorageType eq '${storageType}'`;
+                                                                                                                                                                    }
+
+                                                                                                                                                                    let url = `${root}/sap/opu/odata4/sap/api_whse_storage_bin_2/srvd_a2x/sap/warehousestoragebin/0001/WarehouseStorageBin?$filter=${encodeURIComponent(filter)}&$top=50`;
+                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                    try {
+                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                        if (!response.ok) return { value: [] };
+                                                                                                                                                                        const json = await response.json();
+                                                                                                                                                                        _masterDataCache.storageBins[cacheKey] = json;
+                                                                                                                                                                        return json;
+                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                        console.error("Error fetching Storage Bins:", err);
+                                                                                                                                                                        return { value: [] };
+                                                                                                                                                                    }
+                                                                                                                                                                },
+
+                                                                                                                                                                    // ============================================
+                                                                                                                                                                    // HANDLING UNIT (HU) API METHODS
+                                                                                                                                                                    // ============================================
+
+                                                                                                                                                                    // Get HU API URL (OData V4)
+                                                                                                                                                                    getHUUrl: (config) => {
+                                                                                                                                                                        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                        if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                            return `${root}/sap/opu/odata4/sap/api_handlingunit/srvd_a2x/sap/handlingunit/0001`;
+                                                                                                                                                                        }
+                                                                                                                                                                        // Fallback for S/4HANA Cloud pattern
+                                                                                                                                                                        const urlObj = new URL(baseUrl);
+                                                                                                                                                                        return `${urlObj.origin}/sap/opu/odata4/sap/api_handlingunit/srvd_a2x/sap/handlingunit/0001`;
+                                                                                                                                                                    },
+
+                                                                                                                                                                        // Get Warehouse Physical Stock API URL (required by packProductToHU for StockItemUUID)
+                                                                                                                                                                        getWhsePhysStockUrl: (config) => {
+                                                                                                                                                                            let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                            if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                return `${root}/sap/opu/odata4/sap/api_whse_physstockprod/srvd_a2x/sap/whsephysicalstockproducts/0001`;
+                                                                                                                                                                            }
+                                                                                                                                                                            const urlObj = new URL(baseUrl);
+                                                                                                                                                                            return `${urlObj.origin}/sap/opu/odata4/sap/api_whse_physstockprod/srvd_a2x/sap/whsephysicalstockproducts/0001`;
+                                                                                                                                                                        },
+
+                                                                                                                                                                            // Fetch Handling Units with optional filters
+                                                                                                                                                                            fetchHandlingUnits: async (config, filters = {}) => {
+                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                const huBaseUrl = api.getHUUrl(config);
+
+                                                                                                                                                                                // Build filter string
+                                                                                                                                                                                let filterParts = [];
+                                                                                                                                                                                if (filters.warehouse) {
+                                                                                                                                                                                    filterParts.push(`Warehouse eq '${filters.warehouse}'`);
+                                                                                                                                                                                }
+                                                                                                                                                                                if (filters.plant) {
+                                                                                                                                                                                    filterParts.push(`Plant eq '${filters.plant}'`);
+                                                                                                                                                                                }
+                                                                                                                                                                                if (filters.storageBin) {
+                                                                                                                                                                                    filterParts.push(`StorageBin eq '${filters.storageBin}'`);
+                                                                                                                                                                                }
+                                                                                                                                                                                if (filters.handlingUnit) {
+                                                                                                                                                                                    filterParts.push(`contains(HandlingUnitExternalID,'${filters.handlingUnit}')`);
+                                                                                                                                                                                }
+                                                                                                                                                                                if (filters.referenceDocument) {
+                                                                                                                                                                                    filterParts.push(`HandlingUnitReferenceDocument eq '${filters.referenceDocument}'`);
+                                                                                                                                                                                }
+
+                                                                                                                                                                                let url = `${huBaseUrl}/HandlingUnit`;
+                                                                                                                                                                                if (filterParts.length > 0) {
+                                                                                                                                                                                    url += `?$filter=${encodeURIComponent(filterParts.join(' and '))}`;
+                                                                                                                                                                                }
+                                                                                                                                                                                url += (filterParts.length > 0 ? '&' : '?') + '$top=50';
+                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                try {
+                                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                        console.warn(`Failed to fetch HUs: ${response.status}`, errorText);
+                                                                                                                                                                                        return { value: [] };
+                                                                                                                                                                                    }
+                                                                                                                                                                                    return response.json();
+                                                                                                                                                                                } catch (err) {
+                                                                                                                                                                                    console.error("Error fetching HUs:", err);
+                                                                                                                                                                                    return { value: [] };
+                                                                                                                                                                                }
+                                                                                                                                                                            },
+
+                                                                                                                                                                                // Resolve HU external ID from ParentHandlingUnitUUID + source bin
+                                                                                                                                                                                // Used when stock has ParentHandlingUnitUUID set but HandlingUnitExternalID is empty
+                                                                                                                                                                                resolveHUExternalId: async (config, parentHuUUID, warehouse, storageBin, product) => {
+                                                                                                                                                                                    if (!parentHuUUID) return null;
+                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                    const huBaseUrl = api.getHUUrl(config);
+                                                                                                                                                                                    // No $select — get all fields so we can inspect what UUID field is available
+                                                                                                                                                                                    let filterStr = `Warehouse eq '${warehouse}'`;
+                                                                                                                                                                                    if (storageBin) filterStr += ` and StorageBin eq '${storageBin}'`;
+                                                                                                                                                                                    let url = `${huBaseUrl}/HandlingUnit?$filter=${encodeURIComponent(filterStr)}&$top=50`;
+                                                                                                                                                                                    url = getProxyUrl(url);
+                                                                                                                                                                                    try {
+                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                            const errText = await response.text();
+                                                                                                                                                                                            console.warn('[resolveHUExternalId] HU query failed:', response.status, errText);
+                                                                                                                                                                                            return null;
+                                                                                                                                                                                        }
+                                                                                                                                                                                        const data = await response.json();
+                                                                                                                                                                                        const hus = data.value || [];
+                                                                                                                                                                                        const normalUUID = parentHuUUID.toLowerCase();
+                                                                                                                                                                                        // Try multiple possible UUID field names in the HU entity
+                                                                                                                                                                                        const UUID_FIELDS = ['HandlingUnitUUID', 'UUID', 'InternalHandlingUnitUUID', 'HandlingUnitInternalID'];
+                                                                                                                                                                                        const match = hus.find(h => {
+                                                                                                                                                                                            return UUID_FIELDS.some(f => (h[f] || '').toLowerCase() === normalUUID);
+                                                                                                                                                                                        });
+                                                                                                                                                                                        if (match) {
+                                                                                                                                                                                            return match.HandlingUnitExternalID || null;
+                                                                                                                                                                                        }
+                                                                                                                                                                                        // Fallback: if only one HU at the bin, use it (bin-level implicit HU)
+                                                                                                                                                                                        if (hus.length === 1 && hus[0].HandlingUnitExternalID) {
+                                                                                                                                                                                            return hus[0].HandlingUnitExternalID;
+                                                                                                                                                                                        }
+                                                                                                                                                                                        console.warn('[resolveHUExternalId] no UUID match found for', parentHuUUID, 'in', hus.length, 'HUs');
+
+                                                                                                                                                                                        // Fallback: try to find the HU by querying HU items filtered by product
+                                                                                                                                                                                        if (product) {
+                                                                                                                                                                                            try {
+                                                                                                                                                                                                // Query HandlingUnitItem for this warehouse + product to find the containing HU
+                                                                                                                                                                                                let itemFilter = `Warehouse eq '${warehouse}' and Product eq '${product}'`;
+                                                                                                                                                                                                if (storageBin) itemFilter += ` and StorageBin eq '${storageBin}'`;
+                                                                                                                                                                                                let itemUrl = `${huBaseUrl}/HandlingUnitItem?$filter=${encodeURIComponent(itemFilter)}&$top=10&$select=HandlingUnitExternalID,Product,StorageBin`;
+                                                                                                                                                                                                itemUrl = getProxyUrl(itemUrl);
+                                                                                                                                                                                                const itemResp = await fetch(itemUrl, { headers });
+                                                                                                                                                                                                if (itemResp.ok) {
+                                                                                                                                                                                                    const itemData = await itemResp.json();
+                                                                                                                                                                                                    const items = itemData.value || [];
+                                                                                                                                                                                                    console.log('[resolveHUExternalId] product fallback found', items.length, 'HU items');
+                                                                                                                                                                                                    if (items.length === 1 && items[0].HandlingUnitExternalID) {
+                                                                                                                                                                                                        return items[0].HandlingUnitExternalID;
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    // If multiple HUs contain this product in this bin, use the first one
+                                                                                                                                                                                                    // (ambiguous but better than failing)
+                                                                                                                                                                                                    const uniqueHUs = [...new Set(items.map(i => i.HandlingUnitExternalID).filter(Boolean))];
+                                                                                                                                                                                                    if (uniqueHUs.length > 0) {
+                                                                                                                                                                                                        return uniqueHUs[0];
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                }
+                                                                                                                                                                                            } catch (productErr) {
+                                                                                                                                                                                                console.warn('[resolveHUExternalId] product fallback failed:', productErr);
+                                                                                                                                                                                            }
+                                                                                                                                                                                        }
+                                                                                                                                                                                        return null;
+                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                        console.warn('[resolveHUExternalId] failed:', err);
+                                                                                                                                                                                        return null;
+                                                                                                                                                                                    }
+                                                                                                                                                                                },
+
+                                                                                                                                                                                    fetchHUDetails: async (config, handlingUnitExternalID, warehouse) => {
+                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                        const huBaseUrl = api.getHUUrl(config);
+
+                                                                                                                                                                                        // HU entity uses path-style keys: /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}
+                                                                                                                                                                                        let url;
+                                                                                                                                                                                        if (warehouse) {
+                                                                                                                                                                                            url = `${huBaseUrl}/HandlingUnit/${encodeURIComponent(handlingUnitExternalID)}/${encodeURIComponent(warehouse)}?$expand=_HandlingUnitItem`;
+                                                                                                                                                                                        } else {
+                                                                                                                                                                                            // Without warehouse — search via filter
+                                                                                                                                                                                            url = `${huBaseUrl}/HandlingUnit?$filter=HandlingUnitExternalID eq '${encodeURIComponent(handlingUnitExternalID)}'&$expand=_HandlingUnitItem&$top=1`;
+                                                                                                                                                                                        }
+                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                        console.log("Fetching HU Details:", url);
+
+                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                            throw new Error(`Failed to fetch HU details: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                        }
+                                                                                                                                                                                        const json = await response.json();
+                                                                                                                                                                                        // If searched via filter, return the first result
+                                                                                                                                                                                        if (json.value && Array.isArray(json.value)) {
+                                                                                                                                                                                            return json.value[0] || null;
+                                                                                                                                                                                        }
+                                                                                                                                                                                        return json;
+                                                                                                                                                                                    },
+
+                                                                                                                                                                                        // Create a new Handling Unit
+                                                                                                                                                                                        createHandlingUnit: async (config, payload) => {
+                                                                                                                                                                                            const huBaseUrl = api.getHUUrl(config);
+                                                                                                                                                                                            let url = `${huBaseUrl}/HandlingUnit`;
+                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                            // Fetch CSRF token first
+                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                            headers['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                            console.log("Fetching CSRF token from:", url);
+                                                                                                                                                                                            const tokenResponse = await fetch(url, { method: 'GET', headers });
+                                                                                                                                                                                            const csrfToken = tokenResponse.headers.get('x-csrf-token')
+                                                                                                                                                                                                || tokenResponse.headers.get('X-CSRF-Token')
+                                                                                                                                                                                                || tokenResponse.headers.get('X-Csrf-Token');
+                                                                                                                                                                                            await tokenResponse.text(); // consume body
+
+                                                                                                                                                                                            if (!csrfToken) {
+                                                                                                                                                                                                console.warn("No CSRF token received, proceeding without it");
+                                                                                                                                                                                            } else {
+                                                                                                                                                                                                console.log("Got CSRF token:", csrfToken.substring(0, 10) + "...");
+                                                                                                                                                                                            }
+
+                                                                                                                                                                                            // Now create HU with CSRF token
+                                                                                                                                                                                            const postHeaders = getHeaders(config);
+                                                                                                                                                                                            if (csrfToken) {
+                                                                                                                                                                                                postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                            }
+
+                                                                                                                                                                                            console.log("Creating HU:", url);
+                                                                                                                                                                                            console.log("HU Payload:", JSON.stringify(payload, null, 2));
+
+                                                                                                                                                                                            const response = await fetch(url, {
+                                                                                                                                                                                                method: 'POST',
+                                                                                                                                                                                                headers: postHeaders,
+                                                                                                                                                                                                body: JSON.stringify(payload)
+                                                                                                                                                                                            });
+
+                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                            }
+                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                        },
+
+                                                                                                                                                                                            // Pack products into a Handling Unit by creating HU Item entries
+                                                                                                                                                                                            // Requires fetching StockItemUUID from Warehouse Physical Stock API first
+                                                                                                                                                                                            packProductToHU: async (config, handlingUnitExternalID, warehouse, items) => {
+                                                                                                                                                                                                const huBaseUrl = api.getHUUrl(config);
+                                                                                                                                                                                                const stockBaseUrl = api.getWhsePhysStockUrl(config);
+
+                                                                                                                                                                                                // Step 1: Fetch CSRF token
+                                                                                                                                                                                                const fetchHeaders = getHeaders(config);
+                                                                                                                                                                                                fetchHeaders['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                let tokenUrl = `${huBaseUrl}/HandlingUnit`;
+                                                                                                                                                                                                tokenUrl = getProxyUrl(tokenUrl);
+
+                                                                                                                                                                                                console.log("Fetching CSRF token from:", tokenUrl);
+                                                                                                                                                                                                const tokenResponse = await fetch(tokenUrl, { method: 'HEAD', headers: fetchHeaders });
+                                                                                                                                                                                                const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                if (!csrfToken) {
+                                                                                                                                                                                                    console.warn("No CSRF token received, proceeding without it");
+                                                                                                                                                                                                } else {
+                                                                                                                                                                                                    console.log("Got CSRF token:", csrfToken.substring(0, 10) + "...");
+                                                                                                                                                                                                }
+
+                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                if (csrfToken) {
+                                                                                                                                                                                                    postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                }
+
+                                                                                                                                                                                                // Step 2: For each item, fetch StockItemUUID then pack
+                                                                                                                                                                                                const results = [];
+                                                                                                                                                                                                for (const item of items) {
+                                                                                                                                                                                                    // 2a: Look up StockItemUUID from Warehouse Physical Stock
+                                                                                                                                                                                                    const readHeaders = getHeaders(config);
+                                                                                                                                                                                                    let filter = `EWMWarehouse eq '${warehouse}' and Product eq '${item.Material}'`;
+                                                                                                                                                                                                    if (item.Batch) filter += ` and Batch eq '${item.Batch}'`;
+
+                                                                                                                                                                                                    let stockUrl = `${stockBaseUrl}/WarehousePhysicalStockProducts?$filter=${encodeURIComponent(filter)}&$select=StockItemUUID,EWMStockQuantityBaseUnit,EWMStockQuantityAltvUnit,Product,Batch&$top=1`;
+                                                                                                                                                                                                    stockUrl = getProxyUrl(stockUrl);
+
+                                                                                                                                                                                                    console.log("Looking up StockItemUUID:", stockUrl);
+                                                                                                                                                                                                    const stockResponse = await fetch(stockUrl, { headers: readHeaders });
+
+                                                                                                                                                                                                    if (!stockResponse.ok) {
+                                                                                                                                                                                                        const errText = await stockResponse.text();
+                                                                                                                                                                                                        throw new Error(`Failed to look up stock for product ${item.Material}: ${parseSapError(stockResponse.status, errText)}`);
+                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                    const stockData = await stockResponse.json();
+                                                                                                                                                                                                    const stockItems = stockData.value || [];
+
+                                                                                                                                                                                                    if (stockItems.length === 0) {
+                                                                                                                                                                                                        throw new Error(`No warehouse stock found for product "${item.Material}" in warehouse "${warehouse}". The product must have existing stock in the warehouse to be packed.`);
+                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                    const stockItem = stockItems[0];
+                                                                                                                                                                                                    const stockItemUUID = stockItem.StockItemUUID;
+                                                                                                                                                                                                    const baseUnit = stockItem.EWMStockQuantityBaseUnit || item.HandlingUnitQuantityUnit || 'EA';
+
+                                                                                                                                                                                                    console.log("Found StockItemUUID:", stockItemUUID, "BaseUnit:", baseUnit);
+
+                                                                                                                                                                                                    // 2b: POST to HandlingUnitItem with StockItemUUID
+                                                                                                                                                                                                    let packUrl = `${huBaseUrl}/HandlingUnitItem`;
+                                                                                                                                                                                                    packUrl = getProxyUrl(packUrl);
+
+                                                                                                                                                                                                    const payload = {
+                                                                                                                                                                                                        Warehouse: warehouse,
+                                                                                                                                                                                                        HandlingUnitExternalID: handlingUnitExternalID,
+                                                                                                                                                                                                        StockItemUUID: stockItemUUID,
+                                                                                                                                                                                                        HandlingUnitQuantity: item.HandlingUnitQuantity,
+                                                                                                                                                                                                        HandlingUnitQuantityUnit: item.HandlingUnitQuantityUnit || baseUnit,
+                                                                                                                                                                                                        HandlingUnitAltUnitOfMeasure: item.HandlingUnitQuantityUnit || baseUnit,
+                                                                                                                                                                                                    };
+
+                                                                                                                                                                                                    console.log("Packing item to HU:", packUrl);
+                                                                                                                                                                                                    console.log("Pack Payload:", JSON.stringify(payload, null, 2));
+
+                                                                                                                                                                                                    const response = await fetch(packUrl, {
+                                                                                                                                                                                                        method: 'POST',
+                                                                                                                                                                                                        headers: postHeaders,
+                                                                                                                                                                                                        body: JSON.stringify(payload)
+                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    results.push(await response.json());
+                                                                                                                                                                                                }
+                                                                                                                                                                                                return results;
+                                                                                                                                                                                            },
+
+                                                                                                                                                                                                // Unpack products from a Handling Unit
+                                                                                                                                                                                                unpackProductFromHU: async (config, handlingUnitExternalID, items) => {
+                                                                                                                                                                                                    const huBaseUrl = api.getHUUrl(config);
+
+                                                                                                                                                                                                    // Use action to unpack
+                                                                                                                                                                                                    let url = `${huBaseUrl}/HandlingUnit('${encodeURIComponent(handlingUnitExternalID)}')/SAP__self.UnpackProducts`;
+                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                    // Fetch CSRF token first
+                                                                                                                                                                                                    const fetchHeaders = getHeaders(config);
+                                                                                                                                                                                                    fetchHeaders['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                    let tokenUrl = `${huBaseUrl}/HandlingUnit`;
+                                                                                                                                                                                                    tokenUrl = getProxyUrl(tokenUrl);
+
+                                                                                                                                                                                                    console.log("Fetching CSRF token from:", tokenUrl);
+                                                                                                                                                                                                    const tokenResponse = await fetch(tokenUrl, { method: 'HEAD', headers: fetchHeaders });
+                                                                                                                                                                                                    const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                    if (!csrfToken) {
+                                                                                                                                                                                                        console.warn("No CSRF token received, proceeding without it");
+                                                                                                                                                                                                    } else {
+                                                                                                                                                                                                        console.log("Got CSRF token:", csrfToken.substring(0, 10) + "...");
+                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                    // Now POST with CSRF token
+                                                                                                                                                                                                    const postHeaders = getHeaders(config);
+                                                                                                                                                                                                    if (csrfToken) {
+                                                                                                                                                                                                        postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                    const payload = { _items: items };
+
+                                                                                                                                                                                                    console.log("Unpacking from HU:", url);
+                                                                                                                                                                                                    console.log("Unpack Payload:", JSON.stringify(payload, null, 2));
+
+                                                                                                                                                                                                    const response = await fetch(url, {
+                                                                                                                                                                                                        method: 'POST',
+                                                                                                                                                                                                        headers: postHeaders,
+                                                                                                                                                                                                        body: JSON.stringify(payload)
+                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                        throw new Error(`Failed to unpack from HU: ${response.status} ${errorText}`);
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    return response.json();
+                                                                                                                                                                                                },
+
+                                                                                                                                                                                                    // Delete a Handling Unit
+                                                                                                                                                                                                    deleteHandlingUnit: async (config, handlingUnitExternalID) => {
+                                                                                                                                                                                                        const huBaseUrl = api.getHUUrl(config);
+                                                                                                                                                                                                        let url = `${huBaseUrl}/HandlingUnit('${encodeURIComponent(handlingUnitExternalID)}')`;
+                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                        // Fetch CSRF token first
+                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                        headers['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                        const tokenResponse = await fetch(url, { method: 'HEAD', headers });
+                                                                                                                                                                                                        const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                        const deleteHeaders = getHeaders(config);
+                                                                                                                                                                                                        if (csrfToken) {
+                                                                                                                                                                                                            deleteHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                        console.log("Deleting HU:", url);
+
+                                                                                                                                                                                                        const response = await fetch(url, {
+                                                                                                                                                                                                            method: 'DELETE',
+                                                                                                                                                                                                            headers: deleteHeaders
+                                                                                                                                                                                                        });
+
+                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                            throw new Error(`Failed to delete HU: ${response.status} ${errorText}`);
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                        return { success: true };
+                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                        // ============================================
+                                                                                                                                                                                                        // WAREHOUSE (OData V4 A2X)
+                                                                                                                                                                                                        // ============================================
+
+                                                                                                                                                                                                        getWarehouseUrl: (config) => {
+                                                                                                                                                                                                            let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                            if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                return `${root}/sap/opu/odata4/sap/api_warehouse_2/srvd_a2x/sap/warehouse/0001`;
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                            const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                            return `${urlObj.origin}/sap/opu/odata4/sap/api_warehouse_2/srvd_a2x/sap/warehouse/0001`;
+                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                            fetchWarehouses: async (config) => {
+                                                                                                                                                                                                                if (_masterDataCache.warehouses) return _masterDataCache.warehouses;
+                                                                                                                                                                                                                if (_masterDataPromises.warehouses) return _masterDataPromises.warehouses;
+
+                                                                                                                                                                                                                const promise = (async () => {
+                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                    const baseUrl = api.getWarehouseUrl(config);
+
+                                                                                                                                                                                                                    let url = `${baseUrl}/Warehouse?$top=100`;
+                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                    console.log("Fetching Warehouses:", url);
+
+                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                        const json = await response.json();
+                                                                                                                                                                                                                        _masterDataCache.warehouses = json;
+                                                                                                                                                                                                                        delete _masterDataPromises.warehouses;
+                                                                                                                                                                                                                        return json;
+                                                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                                                        console.error("Error fetching Warehouses:", err);
+                                                                                                                                                                                                                        delete _masterDataPromises.warehouses;
+                                                                                                                                                                                                                        throw err;
+                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                })();
+                                                                                                                                                                                                                _masterDataPromises.warehouses = promise;
+                                                                                                                                                                                                                return promise;
+                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                // ============================================
+                                                                                                                                                                                                                // WAREHOUSE INBOUND DELIVERY API (OData V4 A2X)
+                                                                                                                                                                                                                // ============================================
+
+                                                                                                                                                                                                                getWhseInbDelivUrl: (config) => {
+                                                                                                                                                                                                                    let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                    if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                        const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                        return `${root}/sap/opu/odata4/sap/api_whse_inb_delivery_2/srvd_a2x/sap/warehouseinbounddelivery/0001`;
+                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                    const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                    return `${urlObj.origin}/sap/opu/odata4/sap/api_whse_inb_delivery_2/srvd_a2x/sap/warehouseinbounddelivery/0001`;
+                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                    fetchInboundDeliveriesA2X: async (config, filters = {}) => {
+                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                        const baseUrl = api.getWhseInbDelivUrl(config);
+
+                                                                                                                                                                                                                        let filterParts = [];
+                                                                                                                                                                                                                        if (filters.warehouse) {
+                                                                                                                                                                                                                            filterParts.push(`EWMWarehouse eq '${filters.warehouse}'`);
+                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                        // When a specific document number is provided, use it as the SOLE filter
+                                                                                                                                                                                                                        // (ignore date range and supplier to avoid no-results when doc exists outside date window)
+                                                                                                                                                                                                                        if (filters.deliveryDocument) {
+                                                                                                                                                                                                                            filterParts.push(`EWMInboundDelivery eq '${filters.deliveryDocument}'`);
+                                                                                                                                                                                                                        } else {
+                                                                                                                                                                                                                            // Only apply optional filters when no specific document number is given
+                                                                                                                                                                                                                            if (filters.supplier) {
+                                                                                                                                                                                                                                filterParts.push(`Supplier eq '${filters.supplier}'`);
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                            if (filters.dateFrom) {
+                                                                                                                                                                                                                                // OData V4 requires full ISO datetime string, not bare date
+                                                                                                                                                                                                                                filterParts.push(`PlannedGoodsReceiptDate ge ${filters.dateFrom}T00:00:00Z`);
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                            if (filters.dateTo) {
+                                                                                                                                                                                                                                filterParts.push(`PlannedGoodsReceiptDate le ${filters.dateTo}T23:59:59Z`);
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                        let url = `${baseUrl}/WhseInboundDeliveryHead`;
+                                                                                                                                                                                                                        if (filterParts.length > 0) {
+                                                                                                                                                                                                                            url += `?$filter=${encodeURIComponent(filterParts.join(' and '))}`;
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                        url += (filterParts.length > 0 ? '&' : '?') + '$top=50';
+                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                        console.log("Fetching IBDs (A2X):", url);
+
+                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                                                        } catch (err) {
+                                                                                                                                                                                                                            console.error("Error fetching IBDs (A2X):", err);
+                                                                                                                                                                                                                            throw err;
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                    },
+
+
+                                                                                                                                                                                                                        fetchIMInboundDeliveryHeader: async (config, deliveryId) => {
+                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                            const baseUrlObj = new URL(api.getWhseInbDelivUrl(config));
+                                                                                                                                                                                                                            // Construct the V2 endpoint based on user request: /sap/opu/odata/sap/API_INBOUND_DELIVERY_SRV;v=0002/A_InbDeliveryHeader('...')
+                                                                                                                                                                                                                            // Note: For V2 APIs on Cloud it's often without srvd_a2x but we follow exactly what they requested.
+                                                                                                                                                                                                                            let baseUrl = `${baseUrlObj.origin}/sap/opu/odata/sap/API_INBOUND_DELIVERY_SRV;v=0002`;
+
+                                                                                                                                                                                                                            let url = `${baseUrl}/A_InbDeliveryHeader('${deliveryId}')?$expand=to_DeliveryDocumentPartner,to_DeliveryDocumentItem`;
+                                                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                                                            console.log("Fetching IM IBD Header (V2):", url);
+
+                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                            } catch (err) {
+                                                                                                                                                                                                                                console.error("Error fetching IM IBD Header:", err);
+                                                                                                                                                                                                                                throw err;
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                            fetchInboundDeliveryItemsA2X: async (config, warehouse, deliveryId) => {
+                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                const baseUrl = api.getWhseInbDelivUrl(config);
+
+                                                                                                                                                                                                                                let url = `${baseUrl}/WhseInboundDeliveryItem?$filter=EWMWarehouse eq '${warehouse}' and EWMInboundDelivery eq '${deliveryId}'`;
+                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                console.log("Fetching IBD Items (A2X):", url);
+
+                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                    return response.json();
+                                                                                                                                                                                                                                } catch (err) {
+                                                                                                                                                                                                                                    console.error("Error fetching IBD Items (A2X):", err);
+                                                                                                                                                                                                                                    throw err;
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                fetchHandlingUnitDetails: async (config, huExternalId) => {
+                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                    const baseUrlObj = new URL(config.baseUrl);
+
+                                                                                                                                                                                                                                    // Use the exact OData V4 endpoint from the user's Postman screenshot
+                                                                                                                                                                                                                                    let baseUrl = `${baseUrlObj.origin}/sap/opu/odata4/sap/api_handlingunit/srvd_a2x/sap/handlingunit/001`;
+
+                                                                                                                                                                                                                                    // We only want the specific HU, so filter by HandlingUnitExternalID
+                                                                                                                                                                                                                                    let url = `${baseUrl}/HandlingUnit?$filter=HandlingUnitExternalID eq '${huExternalId}'`;
+                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                    console.log("Fetching HU Details (V4):", url);
+
+                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                        const data = await response.json();
+
+                                                                                                                                                                                                                                        // OData V4 returns data in the 'value' array instead of 'd.results'
+                                                                                                                                                                                                                                        return data && data.value && data.value.length > 0 ? data.value[0] : null;
+                                                                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                                                                        console.error("Error fetching HU Details (V4):", err);
+                                                                                                                                                                                                                                        throw err;
+                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                    updateWarehouseInboundDeliveryItem: async (config, warehouse, deliveryId, itemId, payload) => {
+                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                        const baseUrl = api.getWhseInbDelivUrl(config);
+
+                                                                                                                                                                                                                                        // 1. Fetch CSRF Token
+                                                                                                                                                                                                                                        const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                        const tokenUrl = getProxyUrl(`${baseUrl}/`);
+                                                                                                                                                                                                                                        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                        const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                            tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                            (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+
+                                                                                                                                                                                                                                        if (csrfToken) {
+                                                                                                                                                                                                                                            headers['X-CSRF-Token'] = csrfToken;
+                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                        // 2. Fetch fresh ETag
+                                                                                                                                                                                                                                        let freshEtag = '*';
+                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                            const itemUrl = getProxyUrl(`${baseUrl}/WhseInboundDeliveryItem(EWMWarehouse='${warehouse}',EWMInboundDelivery='${deliveryId}',EWMInboundDeliveryItem='${itemId}')`);
+                                                                                                                                                                                                                                            const itemResponse = await fetch(itemUrl, { method: 'GET', headers: { ...headers, 'Accept': 'application/json' } });
+                                                                                                                                                                                                                                            if (itemResponse.ok) {
+                                                                                                                                                                                                                                                freshEtag = itemResponse.headers.get ? itemResponse.headers.get('etag') : itemResponse.headers['etag'];
+                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                        } catch (e) {
+                                                                                                                                                                                                                                            console.warn("Could not fetch fresh ETag for WmsIBD Item:", e);
+                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                        if (freshEtag) {
+                                                                                                                                                                                                                                            headers['If-Match'] = freshEtag;
+                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                        // 3. Patch item
+                                                                                                                                                                                                                                        let patchUrl = `${baseUrl}/WhseInboundDeliveryItem(EWMWarehouse='${warehouse}',EWMInboundDelivery='${deliveryId}',EWMInboundDeliveryItem='${itemId}')`;
+                                                                                                                                                                                                                                        patchUrl = getProxyUrl(patchUrl);
+
+                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                            const response = await fetch(patchUrl, {
+                                                                                                                                                                                                                                                method: 'PATCH',
+                                                                                                                                                                                                                                                headers,
+                                                                                                                                                                                                                                                body: JSON.stringify(payload)
+                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                                                                        } catch (err) {
+                                                                                                                                                                                                                                            console.error("Error updating WmsIBD Item:", err);
+                                                                                                                                                                                                                                            throw err;
+                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                        postWarehouseGoodsReceipt: async (config, warehouse, deliveryId) => {
+                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                            const baseUrl = api.getWhseInbDelivUrl(config);
+
+                                                                                                                                                                                                                                            // 1. Fetch CSRF Token
+                                                                                                                                                                                                                                            const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                            const tokenUrl = getProxyUrl(`${baseUrl}/`);
+                                                                                                                                                                                                                                            const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                            const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                                tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                                (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+
+                                                                                                                                                                                                                                            if (csrfToken) {
+                                                                                                                                                                                                                                                headers['X-CSRF-Token'] = csrfToken;
+                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                            // 2. Fetch fresh ETag for the Delivery Header
+                                                                                                                                                                                                                                            let freshEtag = '*';
+                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                const headerUrl = getProxyUrl(`${baseUrl}/WhseInboundDeliveryHead(EWMInboundDelivery='${deliveryId}')`);
+                                                                                                                                                                                                                                                const headerResponse = await fetch(headerUrl, { method: 'GET', headers: { ...headers, 'Accept': 'application/json' } });
+                                                                                                                                                                                                                                                if (headerResponse.ok) {
+                                                                                                                                                                                                                                                    freshEtag = headerResponse.headers.get ? headerResponse.headers.get('etag') : headerResponse.headers['etag'];
+                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                            } catch (e) {
+                                                                                                                                                                                                                                                console.warn("Could not fetch fresh ETag for WmsIBD Header:", e);
+                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                            if (freshEtag) {
+                                                                                                                                                                                                                                                headers['If-Match'] = freshEtag;
+                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                            // 3. Map the action POST
+                                                                                                                                                                                                                                            let postUrl = `${baseUrl}/WhseInboundDeliveryHead(EWMInboundDelivery='${deliveryId}')/SAP__self.PostGoodsReceipt`;
+                                                                                                                                                                                                                                            postUrl = getProxyUrl(postUrl);
+
+                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                const response = await fetch(postUrl, {
+                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                    headers,
+                                                                                                                                                                                                                                                    body: JSON.stringify({})
+                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                if (response.status === 204) {
+                                                                                                                                                                                                                                                    return { success: true };
+                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                const text = await response.text();
+                                                                                                                                                                                                                                                return text ? JSON.parse(text) : { success: true };
+                                                                                                                                                                                                                                            } catch (err) {
+                                                                                                                                                                                                                                                console.error("Error posting Goods Receipt for WmsIBD:", err);
+                                                                                                                                                                                                                                                throw err;
+                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                            // ============================================
+                                                                                                                                                                                                                                            // ============================================
+                                                                                                                                                                                                                                            // WAREHOUSE OUTBOUND DELIVERY API (OData V4 A2X)
+                                                                                                                                                                                                                                            // ============================================
+
+                                                                                                                                                                                                                                            getWhseOutbDelivUrl: (config) => {
+                                                                                                                                                                                                                                                let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                    const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                    return `${root}/sap/opu/odata4/sap/api_warehouse_odo_2/srvd_a2x/sap/warehouseoutbdeliveryorder/0001`;
+                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                return `${urlObj.origin}/sap/opu/odata4/sap/api_warehouse_odo_2/srvd_a2x/sap/warehouseoutbdeliveryorder/0001`;
+                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                fetchOutboundDeliveriesA2X: async (config, filters = {}) => {
+                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOutbDelivUrl(config);
+
+                                                                                                                                                                                                                                                    let filterParts = [];
+                                                                                                                                                                                                                                                    if (filters.warehouse) {
+                                                                                                                                                                                                                                                        filterParts.push(`EWMWarehouse eq '${filters.warehouse}'`);
+                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                    // When a specific document number is provided, use it as the SOLE filter
+                                                                                                                                                                                                                                                    if (filters.deliveryDocument) {
+                                                                                                                                                                                                                                                        filterParts.push(`EWMOutboundDeliveryOrder eq '${filters.deliveryDocument}'`);
+                                                                                                                                                                                                                                                    } else {
+                                                                                                                                                                                                                                                        // Only apply optional filters when no specific document number is given
+                                                                                                                                                                                                                                                        if (filters.shipToParty) {
+                                                                                                                                                                                                                                                            filterParts.push(`ShipToParty eq '${filters.shipToParty}'`);
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                        if (filters.dateFrom) {
+                                                                                                                                                                                                                                                            // OData V4 requires full ISO datetime string
+                                                                                                                                                                                                                                                            filterParts.push(`PlannedGoodsIssueDate ge ${filters.dateFrom}T00:00:00Z`);
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                        if (filters.dateTo) {
+                                                                                                                                                                                                                                                            filterParts.push(`PlannedGoodsIssueDate le ${filters.dateTo}T23:59:59Z`);
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                    let url = `${baseUrl}/WhseOutboundDeliveryOrderHead`;
+                                                                                                                                                                                                                                                    if (filterParts.length > 0) {
+                                                                                                                                                                                                                                                        url += `?$filter=${encodeURIComponent(filterParts.join(' and '))}`;
+                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                    url += (filterParts.length > 0 ? '&' : '?') + '$top=50';
+                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                    console.log("Fetching OBDs (A2X):", url);
+
+                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                        return response.json();
+                                                                                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                                                                                        console.error("Error fetching OBDs (A2X):", err);
+                                                                                                                                                                                                                                                        throw err;
+                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                    fetchOutboundDeliveryItemsA2X: async (config, warehouse, deliveryId) => {
+                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                        const baseUrl = api.getWhseOutbDelivUrl(config);
+
+                                                                                                                                                                                                                                                        let url = `${baseUrl}/WhseOutboundDeliveryOrderItem?$filter=EWMWarehouse eq '${warehouse}' and EWMOutboundDeliveryOrder eq '${deliveryId}'`;
+                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                        console.log("Fetching OBD Items (A2X):", url);
+
+                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                                                                                        } catch (err) {
+                                                                                                                                                                                                                                                            console.error("Error fetching OBD Items (A2X):", err);
+                                                                                                                                                                                                                                                            throw err;
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                        postWarehouseGoodsIssue: async (config, deliveryId) => {
+                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                            const baseUrl = api.getWhseOutbDelivUrl(config);
+
+                                                                                                                                                                                                                                                            // 1. Fetch CSRF Token
+                                                                                                                                                                                                                                                            const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                                            const tokenUrl = getProxyUrl(`${baseUrl}/`);
+                                                                                                                                                                                                                                                            const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                                            const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                                                tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                                                (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+
+                                                                                                                                                                                                                                                            if (csrfToken) {
+                                                                                                                                                                                                                                                                headers['X-CSRF-Token'] = csrfToken;
+                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                            // 2. Fetch fresh ETag for the Delivery Header
+                                                                                                                                                                                                                                                            let freshEtag = '*';
+                                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                                const headerUrl = getProxyUrl(`${baseUrl}/WhseOutboundDeliveryOrderHead(EWMOutboundDeliveryOrder='${deliveryId}')`);
+                                                                                                                                                                                                                                                                const headerResponse = await fetch(headerUrl, { method: 'GET', headers: { ...headers, 'Accept': 'application/json' } });
+                                                                                                                                                                                                                                                                if (headerResponse.ok) {
+                                                                                                                                                                                                                                                                    freshEtag = headerResponse.headers.get ? headerResponse.headers.get('etag') : headerResponse.headers['etag'];
+                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                            } catch (e) {
+                                                                                                                                                                                                                                                                console.warn("Could not fetch fresh ETag for OBD Header:", e);
+                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                            if (freshEtag) {
+                                                                                                                                                                                                                                                                headers['If-Match'] = freshEtag;
+                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                            // 3. Map the action POST
+                                                                                                                                                                                                                                                            let postUrl = `${baseUrl}/WhseOutboundDeliveryOrderHead(EWMOutboundDeliveryOrder='${deliveryId}')/SAP__self.PostGoodsIssue`;
+                                                                                                                                                                                                                                                            postUrl = getProxyUrl(postUrl);
+
+                                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                                const response = await fetch(postUrl, {
+                                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                                    headers,
+                                                                                                                                                                                                                                                                    body: JSON.stringify({})
+                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                if (response.status === 204) {
+                                                                                                                                                                                                                                                                    return { success: true };
+                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                const text = await response.text();
+                                                                                                                                                                                                                                                                return text ? JSON.parse(text) : { success: true };
+                                                                                                                                                                                                                                                            } catch (err) {
+                                                                                                                                                                                                                                                                console.error("Error posting Goods Issue for OBD:", err);
+                                                                                                                                                                                                                                                                throw err;
+                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                            // ============================================
+                                                                                                                                                                                                                                                            // WAREHOUSE ORDER & TASK API (OData V4 A2X)
+                                                                                                                                                                                                                                                            // ============================================
+
+                                                                                                                                                                                                                                                            getWhseOrderTaskUrl: (config) => {
+                                                                                                                                                                                                                                                                let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                    const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                    return `${root}/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/sap/warehouseorder/0001`;
+                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                return `${urlObj.origin}/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/sap/warehouseorder/0001`;
+                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                fetchWarehouseTasks: async (config, filters = {}) => {
+                                                                                                                                                                                                                                                                    const cacheKey = JSON.stringify(filters);
+                                                                                                                                                                                                                                                                    if (_masterDataCache.warehouseTasks[cacheKey]) return _masterDataCache.warehouseTasks[cacheKey];
+
+                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOrderTaskUrl(config);
+
+                                                                                                                                                                                                                                                                    let filterParts = [];
+                                                                                                                                                                                                                                                                    if (filters.warehouse) {
+                                                                                                                                                                                                                                                                        filterParts.push(`EWMWarehouse eq '${filters.warehouse}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.deliveryDocument) {
+                                                                                                                                                                                                                                                                        filterParts.push(`EWMDelivery eq '${filters.deliveryDocument}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.deliveryDocuments && filters.deliveryDocuments.length > 0) {
+                                                                                                                                                                                                                                                                        // Some SAP systems have limits on the number of OR conditions, but we'll try to batch them
+                                                                                                                                                                                                                                                                        const delivFilters = filters.deliveryDocuments.map(d => `EWMDelivery eq '${d}'`);
+                                                                                                                                                                                                                                                                        filterParts.push(`(${delivFilters.join(' or ')})`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.handlingUnit) {
+                                                                                                                                                                                                                                                                        filterParts.push(`SourceHandlingUnit eq '${filters.handlingUnit}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.handlingUnits && filters.handlingUnits.length > 0) {
+                                                                                                                                                                                                                                                                        const huFilters = filters.handlingUnits.map(hu => `SourceHandlingUnit eq '${hu}'`);
+                                                                                                                                                                                                                                                                        filterParts.push(`(${huFilters.join(' or ')})`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.status) {
+                                                                                                                                                                                                                                                                        filterParts.push(`WarehouseTaskStatus eq '${filters.status}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.statusNe) {
+                                                                                                                                                                                                                                                                        filterParts.push(`WarehouseTaskStatus ne '${filters.statusNe}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.activityType) {
+                                                                                                                                                                                                                                                                        filterParts.push(`WarehouseActivityType eq '${filters.activityType}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.product) {
+                                                                                                                                                                                                                                                                        filterParts.push(`Product eq '${filters.product}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.sourceBin) {
+                                                                                                                                                                                                                                                                        filterParts.push(`SourceStorageBin eq '${filters.sourceBin}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.sourceHU) {
+                                                                                                                                                                                                                                                                        filterParts.push(`SourceHandlingUnit eq '${filters.sourceHU}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.warehouseOrder) {
+                                                                                                                                                                                                                                                                        filterParts.push(`WarehouseOrder eq '${filters.warehouseOrder}'`);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    if (filters.resource) {
+                                                                                                                                                                                                                                                                        filterParts.push(`EWMResource eq '${sanitizeODataStr(filters.resource)}'`);
+                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehouseTask`;
+                                                                                                                                                                                                                                                                    if (filterParts.length > 0) {
+                                                                                                                                                                                                                                                                        url += `?$filter=${encodeURIComponent(filterParts.join(' and '))}`;
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    url += (filterParts.length > 0 ? '&' : '?') + '$top=100';
+                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                    console.log("Fetching Warehouse Tasks:", url);
+
+                                                                                                                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    const json = await response.json();
+                                                                                                                                                                                                                                                                    _masterDataCache.warehouseTasks[cacheKey] = json;
+                                                                                                                                                                                                                                                                    return json;
+                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                    fetchWarehouseOrders: async (config, filters = {}) => {
+                                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                        const baseUrl = api.getWhseOrderTaskUrl(config);
+
+                                                                                                                                                                                                                                                                        let filterParts = [];
+                                                                                                                                                                                                                                                                        if (filters.warehouse) {
+                                                                                                                                                                                                                                                                            filterParts.push(`EWMWarehouse eq '${filters.warehouse}'`);
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        if (filters.status) {
+                                                                                                                                                                                                                                                                            filterParts.push(`WarehouseOrderStatus eq '${filters.status}'`);
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        if (filters.dateToday) {
+                                                                                                                                                                                                                                                                            const todayStr = new Date().toISOString().split('T')[0];
+                                                                                                                                                                                                                                                                            // OData V4 allows ge on DateTimeOffset strings without the 'datetime' prefix
+                                                                                                                                                                                                                                                                            filterParts.push(`CreationDateTime ge ${todayStr}T00:00:00Z`);
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        if (filters.warehouseOrder) {
+                                                                                                                                                                                                                                                                            filterParts.push(`WarehouseOrder eq '${filters.warehouseOrder}'`);
+                                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                        let url = `${baseUrl}/WarehouseOrder`;
+                                                                                                                                                                                                                                                                        if (filterParts.length > 0) {
+                                                                                                                                                                                                                                                                            url += `?$filter=${encodeURIComponent(filterParts.join(' and '))}`;
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        url += (filterParts.length > 0 ? '&' : '?') + '$top=100';
+                                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                        console.log("Fetching Warehouse Orders:", url);
+
+                                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        return response.json();
+                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                        assignWarehouseOrder: async (config, warehouse, order, resource) => {
+                                                                                                                                                                                                                                                                            const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehouseOrder(EWMWarehouse='${warehouse}',WarehouseOrder='${order}')/SAP__self.AssignWarehouseOrder`;
+                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                            const csrfToken = await getCsrfToken(baseUrl, headers);
+                                                                                                                                                                                                                                                                            if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                            const payload = { EWMResource: resource };
+
+                                                                                                                                                                                                                                                                            const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                method: 'POST',
+                                                                                                                                                                                                                                                                                headers,
+                                                                                                                                                                                                                                                                                body: JSON.stringify(payload)
+                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                            // Could be 204 No Content
+                                                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                                                return await response.json();
+                                                                                                                                                                                                                                                                            } catch {
+                                                                                                                                                                                                                                                                                return { success: true };
+                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                            unassignWarehouseOrder: async (config, warehouse, order) => {
+                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WarehouseOrder(EWMWarehouse='${warehouse}',WarehouseOrder='${order}')/SAP__self.UnassignWarehouseOrder`;
+                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                const csrfToken = await getCsrfToken(baseUrl, headers);
+                                                                                                                                                                                                                                                                                if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                                                    headers,
+                                                                                                                                                                                                                                                                                    body: "{}"
+                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                try { return await response.json(); } catch { return { success: true }; }
+                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                assignPickHU: async (config, warehouse, order, hu) => {
+                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehouseOrderPickHndlgUnit`;
+                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                    const csrfToken = await getCsrfToken(baseUrl, headers);
+                                                                                                                                                                                                                                                                                    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                    const payload = {
+                                                                                                                                                                                                                                                                                        EWMWarehouse: warehouse,
+                                                                                                                                                                                                                                                                                        WarehouseOrder: order,
+                                                                                                                                                                                                                                                                                        HandlingUnitExternalID: hu
+                                                                                                                                                                                                                                                                                    };
+
+                                                                                                                                                                                                                                                                                    const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                        method: 'POST',
+                                                                                                                                                                                                                                                                                        headers,
+                                                                                                                                                                                                                                                                                        body: JSON.stringify(payload)
+                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                    try { return await response.json(); } catch { return { success: true }; }
+                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                    unassignPickHU: async (config, warehouse, order, hu) => {
+                                                                                                                                                                                                                                                                                        const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                        let url = `${baseUrl}/WarehouseOrderPickHndlgUnit(EWMWarehouse='${warehouse}',WarehouseOrder='${order}',HandlingUnitExternalID='${hu}')`;
+                                                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                        const csrfToken = await getCsrfToken(baseUrl, headers);
+                                                                                                                                                                                                                                                                                        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                        const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                            method: 'DELETE',
+                                                                                                                                                                                                                                                                                            headers
+                                                                                                                                                                                                                                                                                        });
+
+                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                        return { success: true };
+                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                        fetchPickHUs: async (config, warehouse, order) => {
+                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehouseOrderPickHndlgUnit?$filter=EWMWarehouse eq '${warehouse}' and WarehouseOrder eq '${order}'`;
+                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+
+                                                                                                                                                                                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                            createWarehouseTask: async (config, payload) => {
+                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WarehouseTask`;
+                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                // Step 1: Fetch CSRF token from service root (required for OData V4)
+                                                                                                                                                                                                                                                                                                const tokenHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                tokenHeaders['X-CSRF-Token'] = 'Fetch';
+
+                                                                                                                                                                                                                                                                                                let csrfToken = null;
+                                                                                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                                                                                    const tokenUrl = getProxyUrl(`${baseUrl}/`);
+                                                                                                                                                                                                                                                                                                    console.log('[createWarehouseTask] Fetching CSRF from:', tokenUrl);
+                                                                                                                                                                                                                                                                                                    const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: tokenHeaders, credentials: 'include' });
+                                                                                                                                                                                                                                                                                                    console.log('[createWarehouseTask] CSRF fetch status:', tokenResponse.status);
+                                                                                                                                                                                                                                                                                                    try { await tokenResponse.text(); } catch (_) { } // consume body
+                                                                                                                                                                                                                                                                                                    // Try multiple ways to get the CSRF token (CapacitorHttp may use different casing)
+                                                                                                                                                                                                                                                                                                    csrfToken = tokenResponse.headers.get
+                                                                                                                                                                                                                                                                                                        ? (tokenResponse.headers.get('x-csrf-token') || tokenResponse.headers.get('X-CSRF-Token') || tokenResponse.headers.get('X-Csrf-Token'))
+                                                                                                                                                                                                                                                                                                        : (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                                                                                                                                                                                                                                                                                                    console.log('[createWarehouseTask] CSRF token actual value:', csrfToken);
+                                                                                                                                                                                                                                                                                                } catch (tokenErr) {
+                                                                                                                                                                                                                                                                                                    console.warn('[createWarehouseTask] CSRF token fetch failed, proceeding without:', tokenErr.message);
+                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                // Step 2: POST the task
+                                                                                                                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                if (csrfToken) {
+                                                                                                                                                                                                                                                                                                    postHeaders['X-CSRF-Token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                console.log("[createWarehouseTask] payload:", JSON.stringify(payload, null, 2));
+
+                                                                                                                                                                                                                                                                                                const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                                                                    headers: postHeaders,
+                                                                                                                                                                                                                                                                                                    body: JSON.stringify(payload),
+                                                                                                                                                                                                                                                                                                    credentials: 'include',
+                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                    console.error('[createWarehouseTask] FULL SAP error:', errorText);
+                                                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                // OData V4: may return 201 Created with body, 202 Accepted, or 204 No Content
+                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                try { return await response.json(); } catch (e) { return { success: true }; }
+                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                confirmWarehouseTask: async (config, warehouse, taskId, taskItem, payload, isExact = false) => {
+                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOrderTaskUrl(config);
+
+                                                                                                                                                                                                                                                                                                    // Dynamically select action based on whether changes were made
+                                                                                                                                                                                                                                                                                                    const actionName = isExact ? 'ConfirmWarehouseTaskExact' : 'ConfirmWarehouseTaskProduct';
+                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehouseTask(EWMWarehouse='${warehouse}',WarehouseTask='${taskId}',WarehouseTaskItem='${taskItem}')/SAP__self.${actionName}`;
+                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                    headers['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                                                                                                                    // Fetch ETag and CSRF token using a GET request for the specific task entity
+                                                                                                                                                                                                                                                                                                    const getUrl = `${baseUrl}/WarehouseTask(EWMWarehouse='${warehouse}',WarehouseTask='${taskId}',WarehouseTaskItem='${taskItem}')`;
+                                                                                                                                                                                                                                                                                                    const getResponse = await fetch(getProxyUrl(getUrl), { method: 'GET', headers });
+                                                                                                                                                                                                                                                                                                    const csrfToken = getResponse.headers.get('x-csrf-token')
+                                                                                                                                                                                                                                                                                                        || getResponse.headers.get('X-CSRF-Token')
+                                                                                                                                                                                                                                                                                                        || getResponse.headers.get('X-Csrf-Token');
+                                                                                                                                                                                                                                                                                                    let etag = getResponse.headers.get('ETag') || getResponse.headers.get('etag');
+
+                                                                                                                                                                                                                                                                                                    if (getResponse.ok && !etag) {
+                                                                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                                                                            const data = await getResponse.json();
+                                                                                                                                                                                                                                                                                                            etag = data['@odata.etag'];
+                                                                                                                                                                                                                                                                                                        } catch (e) {
+                                                                                                                                                                                                                                                                                                            console.warn("Failed to parse ETag from GET response");
+                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                    const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                    if (csrfToken) {
+                                                                                                                                                                                                                                                                                                        postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                    if (etag) {
+                                                                                                                                                                                                                                                                                                        postHeaders['If-Match'] = etag;
+                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                    console.log("Confirming Warehouse Task URL:", url);
+                                                                                                                                                                                                                                                                                                    console.log("Confirming Warehouse Task payload:", JSON.stringify(payload, null, 2));
+
+                                                                                                                                                                                                                                                                                                    const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                                        method: 'POST',
+                                                                                                                                                                                                                                                                                                        headers: postHeaders,
+                                                                                                                                                                                                                                                                                                        body: JSON.stringify(payload)
+                                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                    if (response.status === 204) {
+                                                                                                                                                                                                                                                                                                        return { success: true };
+                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                    return response.json();
+                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                    // ============================================
+                                                                                                                                                                                                                                                                                                    // WAREHOUSE PHYSICAL STOCK PRODUCTS API (OData V4 A2X)
+                                                                                                                                                                                                                                                                                                    // ============================================
+
+                                                                                                                                                                                                                                                                                                    // Fetch human-readable description for a product/material code from API_PRODUCT_SRV
+                                                                                                                                                                                                                                                                                                    fetchProductDescription: async (config, productId) => {
+                                                                                                                                                                                                                                                                                                        if (!productId) return '';
+                                                                                                                                                                                                                                                                                                        const pid = String(productId).trim();
+
+                                                                                                                                                                                                                                                                                                        // Use dynamically created cache for product descriptions
+                                                                                                                                                                                                                                                                                                        if (!_masterDataCache.productDescriptions) _masterDataCache.productDescriptions = {};
+                                                                                                                                                                                                                                                                                                        if (_masterDataCache.productDescriptions[pid]) return _masterDataCache.productDescriptions[pid];
+
+                                                                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                            let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                            if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                baseUrl = `${root}/sap/opu/odata/sap/API_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                            } else {
+                                                                                                                                                                                                                                                                                                                const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                baseUrl = `${urlObj.origin}/sap/opu/odata/sap/API_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/A_ProductDescription?$filter=Product eq '${pid}' and Language eq 'EN'&$top=1&$format=json&$select=ProductDescription`;
+                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                            const resp = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                            if (!resp.ok) return '';
+                                                                                                                                                                                                                                                                                                            const data = await resp.json();
+                                                                                                                                                                                                                                                                                                            const raw = (data.d?.results?.[0]?.ProductDescription || '').trim();
+                                                                                                                                                                                                                                                                                                            if (!raw) return '';
+
+                                                                                                                                                                                                                                                                                                            // SAP sometimes returns the description doubled — deduplicate
+                                                                                                                                                                                                                                                                                                            const half = Math.floor(raw.length / 2);
+                                                                                                                                                                                                                                                                                                            const finalDesc = (half > 3 && raw.slice(0, half) === raw.slice(half))
+                                                                                                                                                                                                                                                                                                                ? raw.slice(0, half).trim()
+                                                                                                                                                                                                                                                                                                                : raw;
+
+                                                                                                                                                                                                                                                                                                            _masterDataCache.productDescriptions[pid] = finalDesc;
+                                                                                                                                                                                                                                                                                                            return finalDesc;
+                                                                                                                                                                                                                                                                                                        } catch { return ''; }
+                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                        // Fetch count of open warehouse tasks for a product/bin/HU (uses OData $count for performance)
+                                                                                                                                                                                                                                                                                                        fetchWarehouseTaskCount: async (config, warehouse, product, sourceBin, sourceHU) => {
+                                                                                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseOrderTaskUrl(config);
+                                                                                                                                                                                                                                                                                                                // Use lightweight fetch instead of $count so we can apply client-side process type filter
+                                                                                                                                                                                                                                                                                                                // (SAP EWM $count endpoint silently fails on complex ne filter combinations)
+                                                                                                                                                                                                                                                                                                                let filterParts = [
+                                                                                                                                                                                                                                                                                                                    `EWMWarehouse eq '${warehouse}'`,
+                                                                                                                                                                                                                                                                                                                    `WarehouseTaskStatus ne 'C'`
+                                                                                                                                                                                                                                                                                                                ];
+                                                                                                                                                                                                                                                                                                                if (product) filterParts.push(`Product eq '${product}'`);
+                                                                                                                                                                                                                                                                                                                if (sourceBin) filterParts.push(`SourceStorageBin eq '${sourceBin}'`);
+                                                                                                                                                                                                                                                                                                                if (sourceHU) filterParts.push(`SourceHandlingUnit eq '${sourceHU}'`);
+                                                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WarehouseTask?$filter=${encodeURIComponent(filterParts.join(' and '))}&$top=200`;
+                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                console.log('[WT Count] URL:', url);
+                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                    console.warn('[WT Count] Response not OK:', response.status);
+                                                                                                                                                                                                                                                                                                                    return 0;
+                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                const data = await response.json();
+                                                                                                                                                                                                                                                                                                                console.log('[WT Count] Raw data keys:', Object.keys(data), 'value length:', data.value?.length, 'd?.results length:', data.d?.results?.length);
+                                                                                                                                                                                                                                                                                                                const items = data.value || data.d?.results || [];
+                                                                                                                                                                                                                                                                                                                const EXCLUDE_TYPES = new Set(['S210', 'S201', 'S012', 'S110', 'S997']);
+                                                                                                                                                                                                                                                                                                                const tasks = items.filter(t => !EXCLUDE_TYPES.has((t.WarehouseProcessType || '').trim()));
+                                                                                                                                                                                                                                                                                                                console.log('[WT Count] After filter:', tasks.length, 'tasks');
+                                                                                                                                                                                                                                                                                                                return tasks.length;
+                                                                                                                                                                                                                                                                                                            } catch (e) { console.warn('[WT Count] Error:', e); return 0; }
+                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                            getWhsePhysStockUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                    const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                    return `${root}/sap/opu/odata4/sap/api_whse_physstockprod/srvd_a2x/sap/whsephysicalstockproducts/0001`;
+                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                return `${urlObj.origin}/sap/opu/odata4/sap/api_whse_physstockprod/srvd_a2x/sap/whsephysicalstockproducts/0001`;
+                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                // Fetch unique products in a warehouse from physical stock
+                                                                                                                                                                                                                                                                                                                fetchWarehouseProducts: async (config, warehouse) => {
+                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhsePhysStockUrl(config);
+
+                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehousePhysicalStockProducts?$filter=EWMWarehouse eq '${warehouse}'&$select=Product,EWMStockQuantityInBaseUnit,EWMStockQuantityBaseUnit,Batch,EWMStorageBin,EWMStorageType,EWMConsolidationGroup&$top=500`;
+                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                    console.log("Fetching Warehouse Products:", url);
+
+                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                        return response.json();
+                                                                                                                                                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                                                                                                                                                        console.error("Error fetching warehouse products:", err);
+                                                                                                                                                                                                                                                                                                                        throw err;
+                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                    // Look up physical stock reference document fields for a specific stock item UUID
+                                                                                                                                                                                                                                                                                                                    fetchPhysicalStockByStockUUID: async (config, warehouse, stockItemUUID) => {
+                                                                                                                                                                                                                                                                                                                        if (!stockItemUUID) return null;
+                                                                                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhsePhysStockUrl(config);
+                                                                                                                                                                                                                                                                                                                            const filterStr = `EWMWarehouse eq '${warehouse}' and StockItemUUID eq ${stockItemUUID}`;
+                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehousePhysicalStockProducts?$filter=${encodeURIComponent(filterStr)}&$top=1&$select=EWMDocumentCategory,EWMStockReferenceDocument,EWMStockReferenceDocumentItem`;
+                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                            console.log('[fetchPhysicalStockByStockUUID] url:', url);
+                                                                                                                                                                                                                                                                                                                            const response = await fetch(url, { headers, credentials: 'include' });
+                                                                                                                                                                                                                                                                                                                            if (!response.ok) return null;
+                                                                                                                                                                                                                                                                                                                            const data = await response.json();
+                                                                                                                                                                                                                                                                                                                            const item = (data.value || [])[0];
+                                                                                                                                                                                                                                                                                                                            if (!item) return null;
+                                                                                                                                                                                                                                                                                                                            return {
+                                                                                                                                                                                                                                                                                                                                EWMDocumentCategory: item.EWMDocumentCategory || null,
+                                                                                                                                                                                                                                                                                                                                EWMStockReferenceDocument: item.EWMStockReferenceDocument || null,
+                                                                                                                                                                                                                                                                                                                                EWMStockReferenceDocumentItem: item.EWMStockReferenceDocumentItem || null,
+                                                                                                                                                                                                                                                                                                                            };
+                                                                                                                                                                                                                                                                                                                        } catch (err) {
+                                                                                                                                                                                                                                                                                                                            console.warn('[fetchPhysicalStockByStockUUID] failed:', err.message);
+                                                                                                                                                                                                                                                                                                                            return null;
+                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                        // ============================================
+                                                                                                                                                                                                                                                                                                                        // PRODUCT MASTER — EAN/GTIN LOOKUP (OData V2)
+                                                                                                                                                                                                                                                                                                                        // ============================================
+
+                                                                                                                                                                                                                                                                                                                        getProductSrvUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                            let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                            if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                return `${root}/sap/opu/odata/sap/API_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                            const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                            return `${urlObj.origin}/sap/opu/odata/sap/API_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                            // Lookup product by GTIN/EAN — returns { Product, InternationalArticleNumber } or null
+                                                                                                                                                                                                                                                                                                                            fetchProductByGTIN: async (config, gtin) => {
+                                                                                                                                                                                                                                                                                                                                if (_masterDataCache.gtins[gtin]) return _masterDataCache.gtins[gtin];
+                                                                                                                                                                                                                                                                                                                                const pKey = `gtin_${gtin}`;
+                                                                                                                                                                                                                                                                                                                                if (_masterDataPromises[pKey]) return _masterDataPromises[pKey];
+
+                                                                                                                                                                                                                                                                                                                                const promise = (async () => {
+                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getProductSrvUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/A_ProductUnitsOfMeasureEAN?$filter=ProductStandardID eq '${gtin}'&$top=5&$format=json`;
+                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                    console.log("Fetching Product by GTIN:", url);
+
+                                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                        const data = await response.json();
+                                                                                                                                                                                                                                                                                                                                        const results = data.d?.results || [];
+                                                                                                                                                                                                                                                                                                                                        if (results.length > 0) {
+                                                                                                                                                                                                                                                                                                                                            _masterDataCache.gtins[gtin] = results[0];
+                                                                                                                                                                                                                                                                                                                                            return results[0]; // { Product, InternationalArticleNumber, ... }
+                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                        return null;
+                                                                                                                                                                                                                                                                                                                                    } catch (err) {
+                                                                                                                                                                                                                                                                                                                                        console.error("Error fetching product by GTIN:", err);
+                                                                                                                                                                                                                                                                                                                                        throw err;
+                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                    // ============================================
+                                                                                                                                                                                                                                                                                                                                    // WAREHOUSE AVAILABLE STOCK API (OData V4 A2X)
+                                                                                                                                                                                                                                                                                                                                    // ============================================
+
+                                                                                                                                                                                                                                                                                                                                    getAvailableStockUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                                        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                        if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                            return `${root}/sap/opu/odata4/sap/api_whse_availablestock/srvd_a2x/sap/warehouseavailablestock/0001`;
+                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                        const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                        return `${urlObj.origin}/sap/opu/odata4/sap/api_whse_availablestock/srvd_a2x/sap/warehouseavailablestock/0001`;
+                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                        // Fetch available stock with optional filters (bin, product, HU)
+                                                                                                                                                                                                                                                                                                                                        fetchAvailableStock: async (config, warehouse, filters = {}) => {
+                                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getAvailableStockUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                            let filterStr = `EWMWarehouse eq '${warehouse}'`;
+                                                                                                                                                                                                                                                                                                                                            if (filters.storageBin) filterStr += ` and EWMStorageBin eq '${filters.storageBin}'`;
+                                                                                                                                                                                                                                                                                                                                            if (filters.product) filterStr += ` and Product eq '${filters.product}'`;
+                                                                                                                                                                                                                                                                                                                                            if (filters.handlingUnit) filterStr += ` and HandlingUnitExternalID eq '${filters.handlingUnit}'`;
+                                                                                                                                                                                                                                                                                                                                            if (filters.batch) filterStr += ` and Batch eq '${filters.batch}'`;
+
+                                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehouseAvailableStock?$filter=${encodeURIComponent(filterStr)}&$top=500`;
+                                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                            console.log("Fetching Available Stock:", url);
+
+                                                                                                                                                                                                                                                                                                                                            try {
+                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                                                                                                                                            } catch (err) {
+                                                                                                                                                                                                                                                                                                                                                console.error("Error fetching available stock:", err);
+                                                                                                                                                                                                                                                                                                                                                throw err;
+                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                            // Repack HU Item — moves full or partial quantity of a product from source HU to dest HU
+                                                                                                                                                                                                                                                                                                                                            // Uses SAP's RepackHandlingUnitItem action on the HandlingUnitItem entity
+                                                                                                                                                                                                                                                                                                                                            // URL: HandlingUnitItem(HandlingUnitExternalID='...',Warehouse='...',StockItemUUID=...)/SAP__self.RepackHandlingUnitItem
+                                                                                                                                                                                                                                                                                                                                            repackHUItem: async (config, sourceHU, warehouse, stockItemUUID, destHU, quantity = null, quantityUnit = null) => {
+                                                                                                                                                                                                                                                                                                                                                const huBaseUrl = api.getHUUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                // Step 1: Fetch CSRF token + ETag from the source HU (path-style keys)
+                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                let entityUrl = `${huBaseUrl}/HandlingUnit/${encodeURIComponent(sourceHU)}/${encodeURIComponent(warehouse)}`;
+                                                                                                                                                                                                                                                                                                                                                entityUrl = getProxyUrl(entityUrl);
+
+                                                                                                                                                                                                                                                                                                                                                console.log("Fetching ETag for source HU:", entityUrl);
+                                                                                                                                                                                                                                                                                                                                                let csrfToken = null;
+                                                                                                                                                                                                                                                                                                                                                let etag = null;
+
+                                                                                                                                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                                                                                                                                    const etagResponse = await fetch(entityUrl, { method: 'GET', headers });
+                                                                                                                                                                                                                                                                                                                                                    csrfToken = etagResponse.headers.get('x-csrf-token');
+                                                                                                                                                                                                                                                                                                                                                    etag = etagResponse.headers.get('etag') || etagResponse.headers.get('ETag');
+                                                                                                                                                                                                                                                                                                                                                    await etagResponse.text();
+                                                                                                                                                                                                                                                                                                                                                    console.log("Got ETag:", etag, "CSRF:", csrfToken ? 'yes' : 'no');
+                                                                                                                                                                                                                                                                                                                                                } catch (e) {
+                                                                                                                                                                                                                                                                                                                                                    console.warn("ETag fetch failed, trying fallback:", e);
+                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                // Fallback: if ETag fetch from entity failed, fetch CSRF from collection
+                                                                                                                                                                                                                                                                                                                                                if (!csrfToken) {
+                                                                                                                                                                                                                                                                                                                                                    const fallbackHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                    fallbackHeaders['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                    const tokenUrl = getProxyUrl(`${huBaseUrl}/HandlingUnit?$top=1`);
+                                                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                                                        const tokenResponse = await fetch(tokenUrl, { method: 'GET', headers: fallbackHeaders });
+                                                                                                                                                                                                                                                                                                                                                        csrfToken = tokenResponse.headers.get('x-csrf-token');
+                                                                                                                                                                                                                                                                                                                                                        await tokenResponse.text();
+                                                                                                                                                                                                                                                                                                                                                    } catch (e2) { console.warn("Fallback CSRF failed:", e2); }
+                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                // Step 2: POST the repack item action
+                                                                                                                                                                                                                                                                                                                                                // SAP key format for HandlingUnitItem: HandlingUnitItem(HandlingUnitExternalID='...',Warehouse='...',StockItemUUID=<uuid>)
+                                                                                                                                                                                                                                                                                                                                                let url = `${huBaseUrl}/HandlingUnitItem(HandlingUnitExternalID='${encodeURIComponent(sourceHU)}',Warehouse='${encodeURIComponent(warehouse)}',StockItemUUID=${stockItemUUID})/SAP__self.RepackHandlingUnitItem`;
+                                                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                postHeaders['If-Match'] = etag || '*';
+
+                                                                                                                                                                                                                                                                                                                                                const payload = { ParentHandlingUnitNumber: destHU };
+                                                                                                                                                                                                                                                                                                                                                // Include quantity + unit only if partial transfer requested
+                                                                                                                                                                                                                                                                                                                                                if (quantity !== null && quantity !== undefined) {
+                                                                                                                                                                                                                                                                                                                                                    payload.HandlingUnitQuantity = quantity;
+                                                                                                                                                                                                                                                                                                                                                    if (quantityUnit) payload.HandlingUnitQuantityUnit = quantityUnit;
+                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                console.log("Repack HU Item URL:", url);
+                                                                                                                                                                                                                                                                                                                                                console.log("Repack Item Payload:", JSON.stringify(payload));
+                                                                                                                                                                                                                                                                                                                                                console.log("If-Match:", postHeaders['If-Match']);
+
+                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                    headers: postHeaders,
+                                                                                                                                                                                                                                                                                                                                                    body: JSON.stringify(payload)
+                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                    throw new Error(`${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                // ══════════════════════════════════════════════════════════════════
+                                                                                                                                                                                                                                                                                                                                                // Warehouse Physical Inventory APIs  (OData V4 — API_WHSE_PHYSINVTRYITEM_2)
+                                                                                                                                                                                                                                                                                                                                                // ══════════════════════════════════════════════════════════════════
+
+                                                                                                                                                                                                                                                                                                                                                getWhsePIUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                                                    let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                                    if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                                        const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                                        return `${root}/sap/opu/odata4/sap/api_whse_physinvtryitem_2/srvd_a2x/sap/whsephysicalinventorydoc/0001`;
+                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                    const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                                    return `${urlObj.origin}/sap/opu/odata4/sap/api_whse_physinvtryitem_2/srvd_a2x/sap/whsephysicalinventorydoc/0001`;
+                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                    // Fetch warehouse PI items with expanded count items
+                                                                                                                                                                                                                                                                                                                                                    fetchWhsePIItems: async (config, warehouse, filters = {}) => {
+                                                                                                                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                        const baseUrl = api.getWhsePIUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                        let filterParts = [`EWMWarehouse eq '${warehouse}'`];
+                                                                                                                                                                                                                                                                                                                                                        if (filters.bin) filterParts.push(`EWMStorageBin eq '${filters.bin}'`);
+                                                                                                                                                                                                                                                                                                                                                        if (filters.docNumber) filterParts.push(`PhysicalInventoryDocNumber eq '${filters.docNumber}'`);
+                                                                                                                                                                                                                                                                                                                                                        if (filters.docYear) filterParts.push(`PhysicalInventoryDocYear eq '${filters.docYear}'`);
+                                                                                                                                                                                                                                                                                                                                                        if (filters.statusOpen) filterParts.push(`PhysicalInventoryStatusText ne 'CTDN'`);
+
+                                                                                                                                                                                                                                                                                                                                                        let url = `${baseUrl}/WhsePhysicalInventoryItem?$filter=${filterParts.join(' and ')}&$expand=_WhsePhysicalInventoryCntItem&$top=200`;
+                                                                                                                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                        console.log("Fetching Warehouse PI Items:", url);
+
+                                                                                                                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                            throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                        return response.json();
+                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                        // Post PI Count via OData $batch — PUT WhsePhysicalInventoryCountItem + PUT WhsePhysicalInventoryItem
+                                                                                                                                                                                                                                                                                                                                                        postWhsePICount: async (config, countItemEntity, headerItemEntity) => {
+                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhsePIUrl(config);
+                                                                                                                                                                                                                                                                                                                                                            const batchUrl = `${baseUrl}/$batch`;
+
+                                                                                                                                                                                                                                                                                                                                                            // 1. Fetch CSRF token
+                                                                                                                                                                                                                                                                                                                                                            const fetchHdrs = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                            fetchHdrs['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                            const tokenResp = await fetch(getProxyUrl(`${baseUrl}/WhsePhysicalInventoryItem?$top=0`), { method: 'GET', headers: fetchHdrs });
+                                                                                                                                                                                                                                                                                                                                                            const csrfToken = tokenResp.headers.get('x-csrf-token');
+                                                                                                                                                                                                                                                                                                                                                            await tokenResp.text(); // consume
+
+                                                                                                                                                                                                                                                                                                                                                            // 2. Build the WhsePhysicalInventoryCountItem key string
+                                                                                                                                                                                                                                                                                                                                                            const ci = countItemEntity;
+                                                                                                                                                                                                                                                                                                                                                            const ciKeyStr = `EWMWarehouse='${ci.EWMWarehouse}',PhysicalInventoryDocNumber='${ci.PhysicalInventoryDocNumber}',PhysicalInventoryDocYear='${ci.PhysicalInventoryDocYear}',PhysicalInventoryItemNumber='${ci.PhysicalInventoryItemNumber}',LineIndexOfPInvItem=${ci.LineIndexOfPInvItem},PInvQuantitySequence=${ci.PInvQuantitySequence}`;
+                                                                                                                                                                                                                                                                                                                                                            const ciEtag = ci['@odata.etag'] || '';
+
+                                                                                                                                                                                                                                                                                                                                                            // 3. Build the WhsePhysicalInventoryItem key string
+                                                                                                                                                                                                                                                                                                                                                            const hi = headerItemEntity;
+                                                                                                                                                                                                                                                                                                                                                            const hiKeyStr = `EWMWarehouse='${hi.EWMWarehouse}',PhysicalInventoryDocNumber='${hi.PhysicalInventoryDocNumber}',PhysicalInventoryDocYear='${hi.PhysicalInventoryDocYear}',PhysicalInventoryItemNumber='${hi.PhysicalInventoryItemNumber}'`;
+                                                                                                                                                                                                                                                                                                                                                            const hiEtag = hi['@odata.etag'] || '';
+
+                                                                                                                                                                                                                                                                                                                                                            // Remove navigation/metadata properties from bodies
+                                                                                                                                                                                                                                                                                                                                                            const cleanEntity = (entity) => {
+                                                                                                                                                                                                                                                                                                                                                                const clean = { ...entity };
+                                                                                                                                                                                                                                                                                                                                                                delete clean['@odata.context'];
+                                                                                                                                                                                                                                                                                                                                                                delete clean['@odata.metadataEtag'];
+                                                                                                                                                                                                                                                                                                                                                                delete clean['_WhsePhysicalInventoryCntItem'];
+                                                                                                                                                                                                                                                                                                                                                                return clean;
+                                                                                                                                                                                                                                                                                                                                                            };
+
+                                                                                                                                                                                                                                                                                                                                                            const ciBody = cleanEntity(ci);
+                                                                                                                                                                                                                                                                                                                                                            const hiBody = cleanEntity(hi);
+                                                                                                                                                                                                                                                                                                                                                            // Header item should not have SAP__Messages in body  
+                                                                                                                                                                                                                                                                                                                                                            delete hiBody['SAP__Messages'];
+                                                                                                                                                                                                                                                                                                                                                            delete ciBody['SAP__Messages'];
+
+                                                                                                                                                                                                                                                                                                                                                            // 4. Build $batch multipart body
+                                                                                                                                                                                                                                                                                                                                                            const CRLF = '\r\n';
+                                                                                                                                                                                                                                                                                                                                                            let batchBody = '';
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `--batch${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Type: multipart/mixed; boundary=changeset${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+
+                                                                                                                                                                                                                                                                                                                                                            // Changeset part 1: PUT WhsePhysicalInventoryCountItem
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `--changeset${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Type: application/http${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Transfer-Encoding: binary${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-ID: 1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `PUT WhsePhysicalInventoryCountItem(${ciKeyStr})  HTTP/1.1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Type: application/json${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            if (ciEtag) batchBody += `If-Match: ${ciEtag}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += JSON.stringify(ciBody);
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+
+                                                                                                                                                                                                                                                                                                                                                            // Changeset part 2: PUT WhsePhysicalInventoryItem
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `--changeset${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Type: application/http${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Transfer-Encoding: binary${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-ID: 2${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `PUT WhsePhysicalInventoryItem(${hiKeyStr})  HTTP/1.1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `Content-Type: application/json${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            if (hiEtag) batchBody += `If-Match: ${hiEtag}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += JSON.stringify(hiBody);
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `--changeset--${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                            batchBody += `--batch--${CRLF}`;
+
+                                                                                                                                                                                                                                                                                                                                                            console.log("POST $batch URL:", batchUrl);
+                                                                                                                                                                                                                                                                                                                                                            console.log("$batch body:", batchBody);
+
+                                                                                                                                                                                                                                                                                                                                                            // 5. POST $batch
+                                                                                                                                                                                                                                                                                                                                                            const batchHdrs = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                            if (csrfToken) batchHdrs['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                            batchHdrs['Content-Type'] = 'multipart/mixed; boundary=batch';
+                                                                                                                                                                                                                                                                                                                                                            batchHdrs['Accept'] = 'multipart/mixed';
+                                                                                                                                                                                                                                                                                                                                                            batchHdrs['OData-Version'] = '4.0';
+                                                                                                                                                                                                                                                                                                                                                            batchHdrs['OData-MaxVersion'] = '4.0';
+
+                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(getProxyUrl(batchUrl), {
+                                                                                                                                                                                                                                                                                                                                                                method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                headers: batchHdrs,
+                                                                                                                                                                                                                                                                                                                                                                body: batchBody
+                                                                                                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                                                                                                            // Read the response body ONCE (CapacitorHttp does not allow reading body twice)
+                                                                                                                                                                                                                                                                                                                                                            let respText = '';
+                                                                                                                                                                                                                                                                                                                                                            try { respText = await response.text(); } catch (e) { respText = ''; }
+                                                                                                                                                                                                                                                                                                                                                            console.log("$batch response:", respText);
+
+                                                                                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                throw new Error(`PI Count failed: ${parseSapError(response.status, respText)}`);
+                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                            // Check for error in batch response
+                                                                                                                                                                                                                                                                                                                                                            if (respText && (respText.includes('"error"') || respText.includes('HTTP/1.1 4'))) {
+                                                                                                                                                                                                                                                                                                                                                                // Try to extract error message
+                                                                                                                                                                                                                                                                                                                                                                const errMatch = respText.match(/"message"\s*:\s*"([^"]+)"/);
+                                                                                                                                                                                                                                                                                                                                                                throw new Error(errMatch ? errMatch[1] : 'Batch request contained errors');
+                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                            return { success: true };
+                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                            // Create adhoc PI document — POST to WhsePhysicalInventoryItem
+                                                                                                                                                                                                                                                                                                                                                            // Accepts an array of item payloads. Uses $batch for multiple items.
+                                                                                                                                                                                                                                                                                                                                                            createWhsePIDocument: async (config, items) => {
+                                                                                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhsePIUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                const itemsArray = Array.isArray(items) ? items : [items];
+
+                                                                                                                                                                                                                                                                                                                                                                // 1. Fetch CSRF token (use GET, not HEAD — SAP OData V4 may reject HEAD)
+                                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                headers['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                                                                                                                                                                                let csrfToken = null;
+                                                                                                                                                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                                                                                                                                                    const tokenUrl = `${baseUrl}/WhsePhysicalInventoryItem?$top=1`;
+                                                                                                                                                                                                                                                                                                                                                                    const tokenResponse = await fetch(getProxyUrl(tokenUrl), { method: 'GET', headers });
+                                                                                                                                                                                                                                                                                                                                                                    csrfToken = tokenResponse.headers.get('x-csrf-token')
+                                                                                                                                                                                                                                                                                                                                                                        || tokenResponse.headers.get('X-CSRF-Token')
+                                                                                                                                                                                                                                                                                                                                                                        || tokenResponse.headers.get('X-Csrf-Token');
+                                                                                                                                                                                                                                                                                                                                                                    await tokenResponse.text(); // consume body
+                                                                                                                                                                                                                                                                                                                                                                    console.log('[createWhsePIDocument] CSRF token:', csrfToken ? 'obtained' : 'not found');
+                                                                                                                                                                                                                                                                                                                                                                } catch (tokenErr) {
+                                                                                                                                                                                                                                                                                                                                                                    console.warn('[createWhsePIDocument] CSRF token fetch failed, proceeding without:', tokenErr.message);
+                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                console.log("Create PI Document — items:", JSON.stringify(itemsArray, null, 2));
+
+                                                                                                                                                                                                                                                                                                                                                                // 2. Single item — direct POST
+                                                                                                                                                                                                                                                                                                                                                                if (itemsArray.length === 1) {
+                                                                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WhsePhysicalInventoryItem`;
+                                                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                    console.log("Create PI (single):", url);
+                                                                                                                                                                                                                                                                                                                                                                    console.log("Create PI (single) payload:", JSON.stringify(itemsArray[0], null, 2));
+
+                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                                                                                                        method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                        headers: postHeaders,
+                                                                                                                                                                                                                                                                                                                                                                        body: JSON.stringify(itemsArray[0])
+                                                                                                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                        let errorText = '';
+                                                                                                                                                                                                                                                                                                                                                                        try { errorText = await response.text(); } catch (e) { errorText = `HTTP ${response.status}`; }
+                                                                                                                                                                                                                                                                                                                                                                        console.error('[createWhsePIDocument] POST failed:', response.status, errorText);
+                                                                                                                                                                                                                                                                                                                                                                        throw new Error(`Create PI failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                                                                                    // CapacitorHttp may auto-parse the response body
+                                                                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                                                                        const text = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                        if (!text) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                        return JSON.parse(text);
+                                                                                                                                                                                                                                                                                                                                                                    } catch (e) {
+                                                                                                                                                                                                                                                                                                                                                                        // If text() fails (already consumed), try json()
+                                                                                                                                                                                                                                                                                                                                                                        try { return await response.json(); } catch (e2) { /* ignore */ }
+                                                                                                                                                                                                                                                                                                                                                                        return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                // 3. Multiple items — use $batch
+                                                                                                                                                                                                                                                                                                                                                                let batchUrl = `${baseUrl}/$batch`;
+                                                                                                                                                                                                                                                                                                                                                                batchUrl = getProxyUrl(batchUrl);
+
+                                                                                                                                                                                                                                                                                                                                                                const CRLF = '\r\n';
+                                                                                                                                                                                                                                                                                                                                                                let batchBody = '';
+                                                                                                                                                                                                                                                                                                                                                                batchBody += `--batch${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                batchBody += `Content-Type: multipart/mixed; boundary=changeset${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                batchBody += CRLF;
+
+                                                                                                                                                                                                                                                                                                                                                                itemsArray.forEach((item, idx) => {
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `--changeset${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `Content-Type: application/http${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `Content-Transfer-Encoding: binary${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `Content-ID: ${idx + 1}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `POST WhsePhysicalInventoryItem HTTP/1.1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += `Content-Type: application/json${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                    batchBody += JSON.stringify(item) + CRLF;
+                                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                                batchBody += `--changeset--${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                batchBody += `--batch--${CRLF}`;
+
+                                                                                                                                                                                                                                                                                                                                                                const batchHeaders = { ...postHeaders };
+                                                                                                                                                                                                                                                                                                                                                                batchHeaders['Content-Type'] = 'multipart/mixed; boundary=batch';
+
+                                                                                                                                                                                                                                                                                                                                                                console.log("Create PI ($batch):", batchUrl);
+
+                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(batchUrl, {
+                                                                                                                                                                                                                                                                                                                                                                    method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                    headers: batchHeaders,
+                                                                                                                                                                                                                                                                                                                                                                    body: batchBody
+                                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                                // Read the response body ONCE (CapacitorHttp does not allow reading body twice)
+                                                                                                                                                                                                                                                                                                                                                                let respText = '';
+                                                                                                                                                                                                                                                                                                                                                                try { respText = await response.text(); } catch (e) { respText = ''; }
+                                                                                                                                                                                                                                                                                                                                                                console.log("$batch response status:", response.status, "body length:", respText.length);
+
+                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                    console.error('[createWhsePIDocument] $batch failed:', response.status, respText);
+                                                                                                                                                                                                                                                                                                                                                                    throw new Error(`Create PI batch failed: ${parseSapError(response.status, respText)}`);
+                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                // Parse batch response to check for inner errors
+                                                                                                                                                                                                                                                                                                                                                                if (respText && (respText.includes('"error"') || respText.includes('HTTP/1.1 4'))) {
+                                                                                                                                                                                                                                                                                                                                                                    // Try to extract the error message
+                                                                                                                                                                                                                                                                                                                                                                    const errMatch = respText.match(/"message"\s*:\s*"([^"]+)"/);
+                                                                                                                                                                                                                                                                                                                                                                    throw new Error(`Create PI failed: ${errMatch ? errMatch[1] : 'Batch request contained errors'}`);
+                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                return { success: true, batchResponse: respText, itemCount: itemsArray.length };
+                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                // ============================================
+                                                                                                                                                                                                                                                                                                                                                                // PRODUCT DESCRIPTION — API_CLFN_PRODUCT_SRV (OData V2)
+                                                                                                                                                                                                                                                                                                                                                                // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                getClfnProductUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                                                                    let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                                                    if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                                                        const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                                                        return `${root}/sap/opu/odata/sap/API_CLFN_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                    const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                                                    return `${urlObj.origin}/sap/opu/odata/sap/API_CLFN_PRODUCT_SRV`;
+                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                    fetchProductDescription: async (config, productId) => {
+                                                                                                                                                                                                                                                                                                                                                                        if (!productId) return '';
+                                                                                                                                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                            headers['Accept'] = 'application/json';
+                                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getClfnProductUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                            // OData V2: filter by language EN first
+                                                                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/A_ClfnProduct('${encodeURIComponent(productId)}')/to_Description?$filter=Language eq 'EN'&$select=ProductDescription&$format=json`;
+                                                                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                            if (response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                const data = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                const results = data?.d?.results || [];
+                                                                                                                                                                                                                                                                                                                                                                                if (results.length > 0) return results[0].ProductDescription || '';
+                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                            // Fallback: no lang filter
+                                                                                                                                                                                                                                                                                                                                                                            let url2 = `${baseUrl}/A_ClfnProduct('${encodeURIComponent(productId)}')/to_Description?$select=ProductDescription&$format=json&$top=1`;
+                                                                                                                                                                                                                                                                                                                                                                            url2 = getProxyUrl(url2);
+                                                                                                                                                                                                                                                                                                                                                                            const resp2 = await fetch(url2, { headers });
+                                                                                                                                                                                                                                                                                                                                                                            if (resp2.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                const data2 = await resp2.json();
+                                                                                                                                                                                                                                                                                                                                                                                const results2 = data2?.d?.results || [];
+                                                                                                                                                                                                                                                                                                                                                                                return results2[0]?.ProductDescription || '';
+                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                            return '';
+                                                                                                                                                                                                                                                                                                                                                                        } catch (e) {
+                                                                                                                                                                                                                                                                                                                                                                            return '';
+                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                        // ============================================
+                                                                                                                                                                                                                                                                                                                                                                        // IBD ITEM — QUANTITY + BIN UPDATE (convenience wrappers)
+                                                                                                                                                                                                                                                                                                                                                                        // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                        updateIBDItemQuantity: async (config, warehouse, deliveryId, itemId, qty) => {
+                                                                                                                                                                                                                                                                                                                                                                            return api.updateWarehouseInboundDeliveryItem(config, warehouse, deliveryId, itemId, {
+                                                                                                                                                                                                                                                                                                                                                                                TargetQuantityInBaseUnit: parseFloat(qty)
+                                                                                                                                                                                                                                                                                                                                                                            });
+                                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                                            updateIBDItemBin: async (config, warehouse, deliveryId, itemId, bin) => {
+                                                                                                                                                                                                                                                                                                                                                                                return api.updateWarehouseInboundDeliveryItem(config, warehouse, deliveryId, itemId, {
+                                                                                                                                                                                                                                                                                                                                                                                    DestinationStorageBin: String(bin).trim().toUpperCase()
+                                                                                                                                                                                                                                                                                                                                                                                });
+                                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                                // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                // OBD ITEM — QUANTITY + BIN UPDATE
+                                                                                                                                                                                                                                                                                                                                                                                // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                                updateWarehouseOutboundDeliveryItem: async (config, deliveryId, itemId, payload) => {
+                                                                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOutbDelivUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                    // 1. Fetch CSRF token
+                                                                                                                                                                                                                                                                                                                                                                                    const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                                                                                                                                                                    const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/`), { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                    const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                                                                                                                                                                        tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                                                                                                                                                                        (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                                                                                                                                                                                                                                                                                                                                                                                    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                    // 2. Fetch fresh ETag for item
+                                                                                                                                                                                                                                                                                                                                                                                    let freshEtag = '*';
+                                                                                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                                                                                        const itemUrl = getProxyUrl(`${baseUrl}/WhseOutboundDeliveryOrderItem(EWMOutboundDeliveryOrder='${deliveryId}',EWMOutboundDeliveryOrderItem='${itemId}')`);
+                                                                                                                                                                                                                                                                                                                                                                                        const itemResp = await fetch(itemUrl, { method: 'GET', headers: { ...headers, Accept: 'application/json' } });
+                                                                                                                                                                                                                                                                                                                                                                                        if (itemResp.ok) freshEtag = itemResp.headers.get ? itemResp.headers.get('etag') : itemResp.headers['etag'];
+                                                                                                                                                                                                                                                                                                                                                                                    } catch (e) { console.warn('Could not fetch OBD item ETag:', e); }
+                                                                                                                                                                                                                                                                                                                                                                                    if (freshEtag) headers['If-Match'] = freshEtag;
+
+                                                                                                                                                                                                                                                                                                                                                                                    // 3. PATCH item
+                                                                                                                                                                                                                                                                                                                                                                                    let patchUrl = `${baseUrl}/WhseOutboundDeliveryOrderItem(EWMOutboundDeliveryOrder='${deliveryId}',EWMOutboundDeliveryOrderItem='${itemId}')`;
+                                                                                                                                                                                                                                                                                                                                                                                    patchUrl = getProxyUrl(patchUrl);
+                                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(patchUrl, { method: 'PATCH', headers, body: JSON.stringify(payload) });
+                                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                    if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                    try { return await response.json(); } catch { return { success: true }; }
+                                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                                    updateOBDItemQuantity: async (config, deliveryId, itemId, qty) => {
+                                                                                                                                                                                                                                                                                                                                                                                        return api.updateWarehouseOutboundDeliveryItem(config, deliveryId, itemId, {
+                                                                                                                                                                                                                                                                                                                                                                                            TargetQuantityInBaseUnit: parseFloat(qty)
+                                                                                                                                                                                                                                                                                                                                                                                        });
+                                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                                        updateOBDItemBin: async (config, deliveryId, itemId, bin) => {
+                                                                                                                                                                                                                                                                                                                                                                                            return api.updateWarehouseOutboundDeliveryItem(config, deliveryId, itemId, {
+                                                                                                                                                                                                                                                                                                                                                                                                SourceStorageBin: String(bin).trim().toUpperCase()
+                                                                                                                                                                                                                                                                                                                                                                                            });
+                                                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                                                            // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                            // GR / GI REVERSAL
+                                                                                                                                                                                                                                                                                                                                                                                            // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                                            reverseWarehouseGoodsReceipt: async (config, deliveryId) => {
+                                                                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseInbDelivUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                // CSRF token
+                                                                                                                                                                                                                                                                                                                                                                                                const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                                                                                                                                                                                const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/`), { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                                const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                                                                                                                                                                                    tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                                                                                                                                                                                    (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                                                                                                                                                                                                                                                                                                                                                                                                if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                                // ETag on delivery head
+                                                                                                                                                                                                                                                                                                                                                                                                let freshEtag = '*';
+                                                                                                                                                                                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                                                                                                                                                                                    const headUrl = getProxyUrl(`${baseUrl}/WhseInboundDeliveryHead(EWMInboundDelivery='${deliveryId}')`);
+                                                                                                                                                                                                                                                                                                                                                                                                    const headResp = await fetch(headUrl, { method: 'GET', headers: { ...headers, Accept: 'application/json' } });
+                                                                                                                                                                                                                                                                                                                                                                                                    if (headResp.ok) freshEtag = headResp.headers.get ? headResp.headers.get('etag') : headResp.headers['etag'];
+                                                                                                                                                                                                                                                                                                                                                                                                } catch (e) { console.warn('Could not fetch IBD head ETag for reversal:', e); }
+                                                                                                                                                                                                                                                                                                                                                                                                if (freshEtag) headers['If-Match'] = freshEtag;
+
+                                                                                                                                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WhseInboundDeliveryHead(EWMInboundDelivery='${deliveryId}')/SAP__self.ReverseGoodsReceipt`;
+                                                                                                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify({}) });
+                                                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                try { const text = await response.text(); return text ? JSON.parse(text) : { success: true }; }
+                                                                                                                                                                                                                                                                                                                                                                                                catch { return { success: true }; }
+                                                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                                                reverseWarehouseGoodsIssue: async (config, deliveryId) => {
+                                                                                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseOutbDelivUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                    // CSRF token
+                                                                                                                                                                                                                                                                                                                                                                                                    const tokenHeaders = { ...headers, 'X-CSRF-Token': 'Fetch' };
+                                                                                                                                                                                                                                                                                                                                                                                                    const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/`), { method: 'GET', headers: tokenHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                                    const csrfToken = tokenResponse.headers.get ?
+                                                                                                                                                                                                                                                                                                                                                                                                        tokenResponse.headers.get('x-csrf-token') :
+                                                                                                                                                                                                                                                                                                                                                                                                        (tokenResponse.headers['x-csrf-token'] || tokenResponse.headers['X-CSRF-Token']);
+                                                                                                                                                                                                                                                                                                                                                                                                    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                                    // ETag on delivery head
+                                                                                                                                                                                                                                                                                                                                                                                                    let freshEtag = '*';
+                                                                                                                                                                                                                                                                                                                                                                                                    try {
+                                                                                                                                                                                                                                                                                                                                                                                                        const headUrl = getProxyUrl(`${baseUrl}/WhseOutboundDeliveryOrderHead(EWMOutboundDeliveryOrder='${deliveryId}')`);
+                                                                                                                                                                                                                                                                                                                                                                                                        const headResp = await fetch(headUrl, { method: 'GET', headers: { ...headers, Accept: 'application/json' } });
+                                                                                                                                                                                                                                                                                                                                                                                                        if (headResp.ok) freshEtag = headResp.headers.get ? headResp.headers.get('etag') : headResp.headers['etag'];
+                                                                                                                                                                                                                                                                                                                                                                                                    } catch (e) { console.warn('Could not fetch OBD head ETag for reversal:', e); }
+                                                                                                                                                                                                                                                                                                                                                                                                    if (freshEtag) headers['If-Match'] = freshEtag;
+
+                                                                                                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WhseOutboundDeliveryOrderHead(EWMOutboundDeliveryOrder='${deliveryId}')/SAP__self.ReverseGoodsIssue`;
+                                                                                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify({}) });
+                                                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                        throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                    if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                    try { const text = await response.text(); return text ? JSON.parse(text) : { success: true }; }
+                                                                                                                                                                                                                                                                                                                                                                                                    catch { return { success: true }; }
+                                                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                                                    // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                                    // PI COUNT — ADD NEW COUNT ITEM (batch POST)
+                                                                                                                                                                                                                                                                                                                                                                                                    // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                                                    addWhsePICountItem: async (config, newItem) => {
+                                                                                                                                                                                                                                                                                                                                                                                                        // newItem: { EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear,
+                                                                                                                                                                                                                                                                                                                                                                                                        //            PhysicalInventoryItemNumber, Product, HandlingUnitExternalID (opt),
+                                                                                                                                                                                                                                                                                                                                                                                                        //            CountedQuantityInBaseUnit, InventoryUoM, LineIndexOfPInvItem, PInvQuantitySequence }
+                                                                                                                                                                                                                                                                                                                                                                                                        const baseUrl = api.getWhsePIUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                        // 1. CSRF token
+                                                                                                                                                                                                                                                                                                                                                                                                        const fetchHdrs = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                        fetchHdrs['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                        const tokenResp = await fetch(getProxyUrl(`${baseUrl}/WhsePhysicalInventoryItem?$top=0`), { method: 'GET', headers: fetchHdrs });
+                                                                                                                                                                                                                                                                                                                                                                                                        const csrfToken = tokenResp.headers.get('x-csrf-token');
+                                                                                                                                                                                                                                                                                                                                                                                                        await tokenResp.text();
+
+                                                                                                                                                                                                                                                                                                                                                                                                        const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                        if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                                        // 2. Build batch with single POST changeset
+                                                                                                                                                                                                                                                                                                                                                                                                        const CRLF = '\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                        const BATCH = 'batchAdd';
+                                                                                                                                                                                                                                                                                                                                                                                                        const CS = 'changesetAdd';
+                                                                                                                                                                                                                                                                                                                                                                                                        let batchBody = '';
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `--${BATCH}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `Content-Type: multipart/mixed; boundary=${CS}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `--${CS}${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `Content-Type: application/http${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `Content-Transfer-Encoding: binary${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `Content-ID: 1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `POST WhsePhysicalInventoryCountItem HTTP/1.1${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `Content-Type: application/json${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += JSON.stringify(newItem) + CRLF;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `--${CS}--${CRLF}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += CRLF;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchBody += `--${BATCH}--${CRLF}`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                        const batchHdrs = { ...postHeaders };
+                                                                                                                                                                                                                                                                                                                                                                                                        batchHdrs['Content-Type'] = `multipart/mixed; boundary=${BATCH}`;
+                                                                                                                                                                                                                                                                                                                                                                                                        batchHdrs['Accept'] = 'multipart/mixed';
+                                                                                                                                                                                                                                                                                                                                                                                                        batchHdrs['OData-Version'] = '4.0';
+                                                                                                                                                                                                                                                                                                                                                                                                        batchHdrs['OData-MaxVersion'] = '4.0';
+
+                                                                                                                                                                                                                                                                                                                                                                                                        const response = await fetch(getProxyUrl(`${baseUrl}/$batch`), {
+                                                                                                                                                                                                                                                                                                                                                                                                            method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                                                            headers: batchHdrs,
+                                                                                                                                                                                                                                                                                                                                                                                                            body: batchBody
+                                                                                                                                                                                                                                                                                                                                                                                                        });
+
+                                                                                                                                                                                                                                                                                                                                                                                                        let respText = '';
+                                                                                                                                                                                                                                                                                                                                                                                                        try { respText = await response.text(); } catch { respText = ''; }
+
+                                                                                                                                                                                                                                                                                                                                                                                                        if (!response.ok) throw new Error(`Add PI Item failed: ${parseSapError(response.status, respText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                        if (respText && (respText.includes('"error"') || respText.includes('HTTP/1.1 4'))) {
+                                                                                                                                                                                                                                                                                                                                                                                                            const errMatch = respText.match(/"message"\s*:\s*"([^"]+)"/);
+                                                                                                                                                                                                                                                                                                                                                                                                            throw new Error(errMatch ? errMatch[1] : 'Batch error adding PI item');
+                                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                        return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                                                        // Delete (mark as deleted) a PI item
+                                                                                                                                                                                                                                                                                                                                                                                                        deleteWhsePIItem: async (config, keys) => {
+                                                                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhsePIUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                            const { EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber } = keys;
+
+                                                                                                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WhsePhysicalInventoryItem/${encodeURIComponent(EWMWarehouse)}/${encodeURIComponent(PhysicalInventoryDocNumber)}/${encodeURIComponent(PhysicalInventoryDocYear)}/${encodeURIComponent(PhysicalInventoryItemNumber)}/SAP__self.DeletePhysicalInventoryItem`;
+                                                                                                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                            headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                            const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/WhsePhysicalInventoryItem`), { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                            const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                            const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                            if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                                            console.log("Delete PI Item:", url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(url, {
+                                                                                                                                                                                                                                                                                                                                                                                                                method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                                                                headers: postHeaders
+                                                                                                                                                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                throw new Error(`Delete PI Item failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                            if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                            return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                                                                            // Fetch Production Order
+                                                                                                                                                                                                                                                                                                                                                                                                            fetchProductionOrder: async (config, orderNumber) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                                                                                                let prodOrderUrl = baseUrl;
+                                                                                                                                                                                                                                                                                                                                                                                                                if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                                                                                                    const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                                                                                                    prodOrderUrl = `${root}/sap/opu/odata/sap/API_PRODUCTION_ORDER_SRV`;
+                                                                                                                                                                                                                                                                                                                                                                                                                } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                    const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                                                                                                    prodOrderUrl = `${urlObj.origin}/sap/opu/odata/sap/API_PRODUCTION_ORDER_SRV`;
+                                                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                let url = `${prodOrderUrl}/A_ProductionOrder('${orderNumber}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                    throw new Error(`Production Order fetch failed: ${response.status}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                const json = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                return json.d || json;
+                                                                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                // Fetch Maintenance Order (V2 API)
+                                                                                                                                                                                                                                                                                                                                                                                                                fetchMaintenanceOrder: async (config, orderNumber) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                    let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                                                                                                    let maintOrderUrl = baseUrl;
+                                                                                                                                                                                                                                                                                                                                                                                                                    if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                                                                                                        const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                                                                                                        maintOrderUrl = `${root}/sap/opu/odata/sap/API_MAINTENANCEORDER`;
+                                                                                                                                                                                                                                                                                                                                                                                                                    } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                        const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                                                                                                        maintOrderUrl = `${urlObj.origin}/sap/opu/odata/sap/API_MAINTENANCEORDER`;
+                                                                                                                                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                    // Standard entity for MaintenanceOrder is MaintenanceOrder
+                                                                                                                                                                                                                                                                                                                                                                                                                    let url = `${maintOrderUrl}/MaintenanceOrder('${orderNumber}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                        throw new Error(`Maintenance Order fetch failed: ${response.status}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                    const json = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                    return json.d || json;
+                                                                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                    // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                                                    // Warehouse Resource API (API_WAREHOUSE_RESOURCE_2)
+                                                                                                                                                                                                                                                                                                                                                                                                                    // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                                                    getWhseResourceUrl: (config) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                        let baseUrl = config.baseUrl.replace(/\/PurchaseReqn\/?$/, '').replace(/\/+$/, '');
+                                                                                                                                                                                                                                                                                                                                                                                                                        if (baseUrl.includes('/sap/opu/')) {
+                                                                                                                                                                                                                                                                                                                                                                                                                            const root = baseUrl.substring(0, baseUrl.indexOf('/sap/opu/'));
+                                                                                                                                                                                                                                                                                                                                                                                                                            return `${root}/sap/opu/odata4/sap/api_warehouse_resource_2/srvd_a2x/sap/warehouseresource/0001`;
+                                                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                                        const urlObj = new URL(baseUrl);
+                                                                                                                                                                                                                                                                                                                                                                                                                        return `${urlObj.origin}/sap/opu/odata4/sap/api_warehouse_resource_2/srvd_a2x/sap/warehouseresource/0001`;
+                                                                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                        fetchWarehouseResource: async (config, ewmWarehouse, ewmResource) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                throw new Error(`Fetch Resource failed: ${response.status}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                            const json = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                            return json.d || json;
+                                                                                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                            logonWarehouseResource: async (config, ewmWarehouse, ewmResource) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')/SAP__self.LogonToWarehouseResource`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                                                const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/WarehouseResource`), { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                postHeaders['Content-Type'] = 'application/json';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { method: 'POST', headers: postHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                    throw new Error(`Logon failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                logoffWarehouseResource: async (config, ewmWarehouse, ewmResource) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')/SAP__self.LogoffFromWarehouseResource`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                    headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/WarehouseResource`), { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                    if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                    postHeaders['Content-Type'] = 'application/json';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(url, { method: 'POST', headers: postHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                        throw new Error(`Logoff failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                    if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                    return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                    createWarehouseResource: async (config, payload) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                        let url = `${baseUrl}/WarehouseResource`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                        headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const tokenResponse = await fetch(url, { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                        if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                        postHeaders['Content-Type'] = 'application/json';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                        const response = await fetch(url, { method: 'POST', headers: postHeaders, body: JSON.stringify(payload) });
+                                                                                                                                                                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                            throw new Error(`Create Resource failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                                                        if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                        return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                        deleteWarehouseResource: async (config, ewmWarehouse, ewmResource) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                            let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                            url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                            headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/WarehouseResource`), { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const deleteHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                            if (csrfToken) deleteHeaders['x-csrf-token'] = csrfToken;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(url, { method: 'DELETE', headers: deleteHeaders });
+                                                                                                                                                                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                throw new Error(`Delete Resource failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                                            if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                            return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                        },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                            updateWarehouseResourceQueue: async (config, ewmWarehouse, ewmResource, queue) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                url = getProxyUrl(url);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                headers['x-csrf-token'] = 'Fetch';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const tokenResponse = await fetch(getProxyUrl(`${baseUrl}/WarehouseResource`), { method: 'HEAD', headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const csrfToken = tokenResponse.headers.get('x-csrf-token');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const patchHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                if (csrfToken) patchHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                patchHeaders['Content-Type'] = 'application/json';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const payload = { WarehouseOrderQueue: queue };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(url, { method: 'PATCH', headers: patchHeaders, body: JSON.stringify(payload) });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    throw new Error(`Update Queue failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                            },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                                                                                // WAREHOUSE RESOURCES — LIST (Value Help)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 * Fetch all warehouse resources for a given warehouse.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 * Used to populate value-help dropdowns (e.g. Claim Resource modal).
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 * @returns {{ value: Array<{ EWMWarehouse, EWMResource, EWMResourceGroup, LogonStatus, WarehouseOrderQueue }> }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                fetchWarehouseResources: async (config, ewmWarehouse) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (_masterDataCache.warehouseResources[ewmWarehouse]) return _masterDataCache.warehouseResources[ewmWarehouse];
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    let url = `${baseUrl}/WarehouseResource?$filter=EWMWarehouse eq '${encodeURIComponent(ewmWarehouse)}'&$expand=_WhseResourceGroupQueueSqnc&$top=200`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        throw new Error(`Fetch Resources failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const json = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    const ret = { value: json.value || (json.d && json.d.results) || [] };
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    _masterDataCache.warehouseResources[ewmWarehouse] = ret;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ret;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Fetch the queue sequence for a specific resource (via its resource group).
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Calls GET /WarehouseResource/{wh}/{res}/_WhseResourceGroupQueueSqnc
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     * @returns {Array<{ EWMWarehouse, EWMResourceGroup, EWMResourceGroupQueueSqncNmbr, WarehouseOrderQueue }>}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    fetchResourceQueueSequence: async (config, ewmWarehouse, ewmResource) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const cacheKey = `${ewmWarehouse}_${ewmResource}`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        if (_masterDataCache.resourceQueueSequence[cacheKey]) return _masterDataCache.resourceQueueSequence[cacheKey];
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const baseUrl = api.getWhseResourceUrl(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        let url = `${baseUrl}/WarehouseResource(EWMWarehouse='${encodeURIComponent(ewmWarehouse)}',EWMResource='${encodeURIComponent(ewmResource)}')/_WhseResourceGroupQueueSqnc`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        url = getProxyUrl(url);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const headers = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const response = await fetch(url, { headers });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            throw new Error(`Fetch Queue Sequence failed: ${parseSapError(response.status, errorText)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const json = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        const ret = json.value || (json.d && json.d.results) || [];
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        _masterDataCache.resourceQueueSequence[cacheKey] = ret;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        return ret;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    },
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        // ============================================
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        // WAREHOUSE TASK CONFIRMATION WITH SERIAL NUMBERS ($batch)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        // ============================================
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * Confirm a warehouse task AND assign serial numbers in a single atomic $batch changeset.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * SAP requires serial numbers to be submitted alongside the confirmation as separate
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * operations inside an OData changeset. The changeset must contain:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         *  1. The ConfirmWarehouseTaskProduct (or Exact) action call
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         *  2. One POST to WarehouseTaskSerialNumber per serial number
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {Object} config       API config
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {string} warehouse    EWM Warehouse
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {string} taskId       Warehouse Task ID
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {string} taskItem     Warehouse Task Item
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {Object} payload      Standard confirm payload (same as confirmWarehouseTask)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {boolean} isExact     Whether this is an exact confirmation
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {string[]} serialNumbers  Array of serial number strings to assign
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         * @param {string} [etag]       Optional ETag for the task entity
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        confirmWarehouseTaskWithSerials: async (config, warehouse, taskId, taskItem, payload, isExact, serialNumbers) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const baseUrl = api.getWhseOrderTaskUrl(config);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // --- 1. Fetch CSRF token + ETag ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const headersFetch = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            headersFetch['x-csrf-token'] = 'Fetch';
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const getUrl = `${baseUrl}/WarehouseTask(EWMWarehouse='${warehouse}',WarehouseTask='${taskId}',WarehouseTaskItem='${taskItem}')`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const getResponse = await fetch(getProxyUrl(getUrl), { method: 'GET', headers: headersFetch });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const csrfToken = getResponse.headers.get('x-csrf-token')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                || getResponse.headers.get('X-CSRF-Token')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                || getResponse.headers.get('X-Csrf-Token');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            let etag = getResponse.headers.get('ETag') || getResponse.headers.get('etag');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (getResponse.ok && !etag) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                try { const data = await getResponse.json(); etag = data['@odata.etag']; } catch (_) { }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // If no serial numbers, fall back to regular confirm
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (!serialNumbers || serialNumbers.length === 0) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const postHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (csrfToken) postHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (etag) postHeaders['If-Match'] = etag;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const actionName = isExact ? 'ConfirmWarehouseTaskExact' : 'ConfirmWarehouseTaskProduct';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const actionUrl = `${baseUrl}/WarehouseTask(EWMWarehouse='${warehouse}',WarehouseTask='${taskId}',WarehouseTaskItem='${taskItem}')/SAP__self.${actionName}`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(getProxyUrl(actionUrl), {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    method: 'POST', headers: postHeaders, body: JSON.stringify(payload)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (response.status === 204) return { success: true };
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                return response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // --- 2. Build $batch multipart body ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const boundary = 'batch_' + Date.now();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const changesetBoundary = 'changeset_' + Date.now();
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const actionName = isExact ? 'ConfirmWarehouseTaskExact' : 'ConfirmWarehouseTaskProduct';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const actionPath = `WarehouseTask(EWMWarehouse='${warehouse}',WarehouseTask='${taskId}',WarehouseTaskItem='${taskItem}')/SAP__self.${actionName}`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            let body = '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `--${boundary}\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `Content-Type: multipart/mixed;boundary=${changesetBoundary}\r\n\r\n`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // Operation 1: Confirm the warehouse task
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `--${changesetBoundary}\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += 'Content-Type: application/http\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += 'Content-Transfer-Encoding: binary\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += 'Content-ID: 1\r\n\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `POST ${actionPath} HTTP/1.1\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += 'Content-Type: application/json\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (etag) body += `If-Match: ${etag}\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `\r\n${JSON.stringify(payload)}\r\n`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // Operations 2..N: Assign each serial number
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            serialNumbers.forEach((sn, idx) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += `--${changesetBoundary}\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += 'Content-Type: application/http\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += 'Content-Transfer-Encoding: binary\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += `Content-ID: ${idx + 2}\r\n\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += `POST WarehouseTaskSerialNumber HTTP/1.1\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += 'Content-Type: application/json\r\n';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body += `\r\n${JSON.stringify({
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    EWMWarehouse: warehouse,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    WarehouseTask: taskId,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    WarehouseTaskItem: taskItem,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    EWMSerialNumber: sn.trim()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                })}\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `--${changesetBoundary}--\r\n`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            body += `--${boundary}--\r\n`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // --- 3. Send the $batch request ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const batchUrl = `${baseUrl}/$batch`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const batchHeaders = getHeaders(config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (csrfToken) batchHeaders['x-csrf-token'] = csrfToken;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            batchHeaders['Content-Type'] = `multipart/mixed;boundary=${boundary}`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            delete batchHeaders['Accept']; // $batch needs no Accept: application/json at top level
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            console.log('[Batch] Confirming task with', serialNumbers.length, 'serial numbers');
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(getProxyUrl(batchUrl), {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                method: 'POST',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                headers: batchHeaders,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                body
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (!response.ok) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const errorText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                throw new Error(parseSapError(response.status, errorText));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // Parse batch response for inner errors
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const responseText = await response.text();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            // Check for inner HTTP error statuses (4xx, 5xx) inside the batch response
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const innerErrorMatch = responseText.match(/HTTP\/1\.1\s+(4\d{2}|5\d{2})\s+/);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (innerErrorMatch) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                // Try to extract the SAP error message from the inner response
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const jsonMatch = responseText.match(/"message"\s*:\s*\{[^}]*"value"\s*:\s*"([^"]+)"/);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const innerMsg = jsonMatch ? jsonMatch[1] : `Inner batch operation failed with status ${innerErrorMatch[1]}`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                throw new Error(innerMsg);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            return { success: true };
