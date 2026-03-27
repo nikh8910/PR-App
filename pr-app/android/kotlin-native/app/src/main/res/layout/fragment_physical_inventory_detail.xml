@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0F172A">    <!-- bg-slate-900 -->
+
+    <!-- Custom Top Header -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="64dp" android:background="#1E293B" android:elevation="4dp" app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@android:drawable/ic_menu_revert" app:tint="#F8FAFC" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <TextView android:id="@+id/text_pi_header" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PI Doc: 100000123" android:textSize="18sp" android:textStyle="bold" android:textColor="#F1F5F9" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- Bottom border -->
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#334155" app:layout_constraintBottom_toBottomOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_pi_items" android:layout_width="match_parent" android:layout_height="0dp" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toBottomOf="parent" android:clipToPadding="false" android:paddingTop="16dp" android:paddingBottom="40dp" tools:listitem="@layout/item_pi_detail" />
+
+    <ProgressBar android:id="@+id/progress_detail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" android:indeterminateTint="#3B82F6" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

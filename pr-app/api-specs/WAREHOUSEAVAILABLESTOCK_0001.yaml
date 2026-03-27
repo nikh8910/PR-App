@@ -1,0 +1,400 @@
+openapi: 3.0.0
+info: {title: Warehouse Available Stock - Read (A2X), version: 1.0.2, description: This allows you to analyze the current stock situation in a warehouse. You can use the retrieved information to determine stock for warehouse tasks.}
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/e9/ca4f97fad74e7f9cee66c9433a85b7/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Retrieve available stock with this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Stock Integration (SAP_COM_0755), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Production Integration (3DV)](https://me.sap.com/processnavigator/SolP/3DV " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Outbound Processing (3BS)](https://me.sap.com/processnavigator/SolP/3BS " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Inbound Processing (3BR)](https://me.sap.com/processnavigator/SolP/3BR " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Ad Hoc Goods Issue (3BT)](https://me.sap.com/processnavigator/SolP/3BT " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Posting Changes (3BU)](https://me.sap.com/processnavigator/SolP/3BU " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Kanban Supply into Production (3VT)](https://me.sap.com/processnavigator/SolP/3VT " Link To BP ")', format: markdown}
+  - {text: '[Quality Management in Warehousing (3M0)](https://me.sap.com/processnavigator/SolP/3M0 " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Internal Repacking (3BW)](https://me.sap.com/processnavigator/SolP/3BW " Link To BP ")', format: markdown}
+  - {text: '[Warehouse Physical Inventory (3BX)](https://me.sap.com/processnavigator/SolP/3BX " Link To BP ")', format: markdown}
+  - {text: '[Resource Management in Warehousing (3W0)](https://me.sap.com/processnavigator/SolP/3W0 " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WHSE_AVAILABLESTOCK, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Available Stock, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_whse_availablestock/srvd_a2x/sap/warehouseavailablestock/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_whse_availablestock/srvd_a2x/sap/warehouseavailablestock/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Available Stock}
+paths:
+  /WarehouseAvailableStock:
+    get:
+      summary: Get entities from WarehouseAvailableStock
+      tags: [Available Stock]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, Product, Product desc, Batch, Batch desc, EWMStockOwner, EWMStockOwner desc, EntitledToDisposeParty, EntitledToDisposeParty desc, EWMStockType, EWMStockType desc, EWMStockUsage, EWMStockUsage desc, StockDocumentCategory, StockDocumentCategory desc, EWMDocumentCategory, EWMDocumentCategory desc, WBSElementExternalID, WBSElementExternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, HandlingUnitExternalID, HandlingUnitExternalID desc, EWMStorageBin, EWMStorageBin desc, EWMResource, EWMResource desc, WBSElementInternalID, WBSElementInternalID desc, EWMStorageType, EWMStorageType desc, AvailableEWMStockQty, AvailableEWMStockQty desc, EWMStockQuantityBaseUnit, EWMStockQuantityBaseUnit desc, EWMStockQtyBaseUnitISOCode, EWMStockQtyBaseUnitISOCode desc, StockKeepingAlternativeUoM, StockKeepingAlternativeUoM desc, StockKeepingAltvUnitISOCode, StockKeepingAltvUnitISOCode desc, GoodsReceiptUTCDateTime, GoodsReceiptUTCDateTime desc, ShelfLifeExpirationDate, ShelfLifeExpirationDate desc, EWMStockIsBlockedForInventory, EWMStockIsBlockedForInventory desc, EWMBatchIsInRestrictedUseStock, EWMBatchIsInRestrictedUseStock desc, CountryOfOrigin, CountryOfOrigin desc, EWMHUHasOpenWarehouseTask, EWMHUHasOpenWarehouseTask desc, WhseQualityInspectionType, WhseQualityInspectionType desc, QualityInspectionDocument, QualityInspectionDocument desc, ParentHandlingUnitUUID, ParentHandlingUnitUUID desc, StockItemUUID, StockItemUUID desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, Product, Batch, EWMStockOwner, EntitledToDisposeParty, EWMStockType, EWMStockUsage, StockDocumentCategory, EWMDocumentCategory, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, HandlingUnitExternalID, EWMStorageBin, EWMResource, WBSElementInternalID, EWMStorageType, AvailableEWMStockQty, EWMStockQuantityBaseUnit, EWMStockQtyBaseUnitISOCode, StockKeepingAlternativeUoM, StockKeepingAltvUnitISOCode, GoodsReceiptUTCDateTime, ShelfLifeExpirationDate, EWMStockIsBlockedForInventory, EWMBatchIsInRestrictedUseStock, CountryOfOrigin, EWMHUHasOpenWarehouseTask, WhseQualityInspectionType, QualityInspectionDocument, ParentHandlingUnitUUID, StockItemUUID]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseAvailableStock_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_availablestock.v0001.WarehouseAvailableStock_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WarehouseAvailableStock/{EWMWarehouse}/{Product}/{Batch}/{EWMStockOwner}/{EntitledToDisposeParty}/{EWMStockType}/{EWMStockUsage}/{StockDocumentCategory}/{EWMDocumentCategory}/{WBSElementExternalID}/{SpecialStockIdfgSalesOrder}/{SpecialStockIdfgSalesOrderItem}/{HandlingUnitExternalID}/{EWMStorageBin}/{EWMResource}
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: Product
+      in: path
+      required: true
+      description: Product
+      schema: {type: string, maxLength: 40}
+    - name: Batch
+      in: path
+      required: true
+      description: Batch
+      schema: {type: string, maxLength: 10}
+    - name: EWMStockOwner
+      in: path
+      required: true
+      description: Stock Owner
+      schema: {type: string, maxLength: 10}
+    - name: EntitledToDisposeParty
+      in: path
+      required: true
+      description: Party Entitled to Dispose
+      schema: {type: string, maxLength: 10}
+    - name: EWMStockType
+      in: path
+      required: true
+      description: Stock Type
+      schema: {type: string, maxLength: 2}
+    - name: EWMStockUsage
+      in: path
+      required: true
+      description: Stock Usage
+      schema: {type: string, maxLength: 1}
+    - name: StockDocumentCategory
+      in: path
+      required: true
+      description: Special Reference Stock Type
+      schema: {type: string, maxLength: 3}
+    - name: EWMDocumentCategory
+      in: path
+      required: true
+      description: Doc. Category for Doc. Reference and Doc.-Related Stock
+      schema: {type: string, maxLength: 3}
+    - name: WBSElementExternalID
+      in: path
+      required: true
+      description: Work Breakdown Structure Element (WBS Element) Edited
+      schema: {type: string, maxLength: 24}
+    - name: SpecialStockIdfgSalesOrder
+      in: path
+      required: true
+      description: Sales and Distribution Document Number
+      schema: {type: string, maxLength: 10}
+    - name: SpecialStockIdfgSalesOrderItem
+      in: path
+      required: true
+      description: Sales Order/Project Item for Sales Order/Project Stock
+      schema: {type: string, maxLength: 6}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: Handling Unit
+      schema: {type: string, maxLength: 20}
+    - name: EWMStorageBin
+      in: path
+      required: true
+      description: Storage Bin
+      schema: {type: string, maxLength: 18}
+    - name: EWMResource
+      in: path
+      required: true
+      description: Resource (Means of Transportation or User)
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get entity from WarehouseAvailableStock by key
+      tags: [Available Stock]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, Product, Batch, EWMStockOwner, EntitledToDisposeParty, EWMStockType, EWMStockUsage, StockDocumentCategory, EWMDocumentCategory, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, HandlingUnitExternalID, EWMStorageBin, EWMResource, WBSElementInternalID, EWMStorageType, AvailableEWMStockQty, EWMStockQuantityBaseUnit, EWMStockQtyBaseUnitISOCode, StockKeepingAlternativeUoM, StockKeepingAltvUnitISOCode, GoodsReceiptUTCDateTime, ShelfLifeExpirationDate, EWMStockIsBlockedForInventory, EWMBatchIsInRestrictedUseStock, CountryOfOrigin, EWMHUHasOpenWarehouseTask, WhseQualityInspectionType, QualityInspectionDocument, ParentHandlingUnitUUID, StockItemUUID]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_availablestock.v0001.WarehouseAvailableStock_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WarehouseAvailableStock HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_whse_availablestock.v0001.WarehouseAvailableStock_Type:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        Product: {type: string, maxLength: 40, title: Product}
+        Batch: {type: string, maxLength: 10, title: Batch}
+        EWMStockOwner: {type: string, maxLength: 10, title: Stock Owner}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        EWMStockType: {type: string, maxLength: 2, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, title: Usage, description: Stock Usage}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        EWMDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: Sls Order/Proj. Item, description: Sales Order/Project Item for Sales Order/Project Stock}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMResource: {type: string, maxLength: 18, title: Resource, description: Resource (Means of Transportation or User)}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        EWMStorageType: {type: string, maxLength: 4, title: Storage Type}
+        AvailableEWMStockQty:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Available Quantity
+        EWMStockQuantityBaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMStockQtyBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        StockKeepingAlternativeUoM: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        StockKeepingAltvUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        GoodsReceiptUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockIsBlockedForInventory: {type: boolean, title: Inventory Active, description: 'Blocking Indicator: Current Inventory (System)'}
+        EWMBatchIsInRestrictedUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        EWMHUHasOpenWarehouseTask: {type: boolean, title: Open HU WT, description: 'Indicator: Handling Unit is Being Moved (Open HU WT)'}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocument: {type: string, maxLength: 35, title: Quality Inspection, description: Inspection Lot or Inspection Document Number}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID Stock, description: GUID Stock Item}
+      title: Available Stock
+    com.sap.gateway.srvd_a2x.api_whse_availablestock.v0001.WarehouseAvailableStock_Type-create:
+      type: object
+      properties:
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        EWMStorageType: {type: string, maxLength: 4, title: Storage Type}
+        AvailableEWMStockQty:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Available Quantity
+        EWMStockQuantityBaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMStockQtyBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        StockKeepingAlternativeUoM: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        StockKeepingAltvUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        GoodsReceiptUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockIsBlockedForInventory: {type: boolean, title: Inventory Active, description: 'Blocking Indicator: Current Inventory (System)'}
+        EWMBatchIsInRestrictedUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        EWMHUHasOpenWarehouseTask: {type: boolean, title: Open HU WT, description: 'Indicator: Handling Unit is Being Moved (Open HU WT)'}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocument: {type: string, maxLength: 35, title: Quality Inspection, description: Inspection Lot or Inspection Document Number}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID Stock, description: GUID Stock Item}
+      title: Available Stock (for create)
+    com.sap.gateway.srvd_a2x.api_whse_availablestock.v0001.WarehouseAvailableStock_Type-update:
+      type: object
+      properties:
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        EWMStorageType: {type: string, maxLength: 4, title: Storage Type}
+        AvailableEWMStockQty:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Available Quantity
+        EWMStockQuantityBaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMStockQtyBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        StockKeepingAlternativeUoM: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        StockKeepingAltvUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        GoodsReceiptUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockIsBlockedForInventory: {type: boolean, title: Inventory Active, description: 'Blocking Indicator: Current Inventory (System)'}
+        EWMBatchIsInRestrictedUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        EWMHUHasOpenWarehouseTask: {type: boolean, title: Open HU WT, description: 'Indicator: Handling Unit is Being Moved (Open HU WT)'}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocument: {type: string, maxLength: 35, title: Quality Inspection, description: Inspection Lot or Inspection Document Number}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID Stock, description: GUID Stock Item}
+      title: Available Stock (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WHSE_AVAILABLESTOCK': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WHSE_AVAILABLESTOCK']
+- BasicAuth: []

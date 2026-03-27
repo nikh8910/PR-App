@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp" android:background="#1E293B">    <!-- Dark modal background -->
+
+    <!-- Packaging Material -->
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PACKAGING MATERIAL" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+    <EditText android:id="@+id/input_pm_material" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. CARTON" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="16dp"/>
+
+    <!-- Plant -->
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PLANT" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+    <EditText android:id="@+id/input_pm_plant" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 1010" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="16dp"/>
+
+    <!-- Storage Location -->
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STORAGE LOCATION" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+    <EditText android:id="@+id/input_pm_sloc" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 0001" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark"/>
+
+</LinearLayout>

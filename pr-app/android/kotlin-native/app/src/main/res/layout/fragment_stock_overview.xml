@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#0F172A">    <!-- bg-slate-900 -->
+
+    <!-- Custom Top Header -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="64dp" android:background="#1E293B" android:elevation="4dp">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@android:drawable/ic_menu_revert" app:tint="#F8FAFC" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <TextView android:id="@+id/header_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stock Overview" android:textSize="18sp" android:textStyle="bold" android:textColor="#F1F5F9" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- Bottom border -->
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#334155" app:layout_constraintBottom_toBottomOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp">
+
+            <LinearLayout android:id="@+id/layout_filter" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PRODUCT NUMBER" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                <EditText android:id="@+id/input_material" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. MAT123" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="16dp"/>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="24dp">
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="8dp">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PLANT" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                        <EditText android:id="@+id/input_plant" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 1000" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="8dp">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STORAGE LOCK" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                        <EditText android:id="@+id/input_sloc" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 0001" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <Button android:id="@+id/btn_search" android:layout_width="match_parent" android:layout_height="52dp" android:text="Search Stock" android:textAllCaps="false" android:textStyle="bold" android:textSize="16sp" android:textColor="#FFFFFF" android:background="@drawable/bg_button_primary" app:backgroundTint="@null"/>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_stock_list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="24dp" android:clipToPadding="false" android:paddingBottom="40dp" tools:listitem="@layout/item_stock"/>
+
+        </LinearLayout>
+
+        <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" android:indeterminateTint="#3B82F6" android:layout_gravity="center"/>
+
+        <TextView android:id="@+id/text_error" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No Stock found" android:textColor="#EF4444" android:background="#1E293B" android:padding="16dp" android:visibility="gone" android:layout_gravity="center"/>
+
+    </FrameLayout>
+</LinearLayout>

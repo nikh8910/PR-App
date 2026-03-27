@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp" android:background="@drawable/bg_glass_card" android:clipToOutline="true" android:foreground="?attr/selectableItemBackground" android:gravity="center_vertical" android:minHeight="100dp">
+
+    <!-- Left Colored Strip -->
+    <View android:layout_width="8dp" android:layout_height="match_parent" android:background="#3B82F6" />
+
+    <!-- Main Content -->
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:padding="16dp">
+
+        <TextView android:id="@+id/tv_pr_number" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="#0001000012" android:textColor="#172554" android:textSize="18sp" android:textStyle="bold" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="6dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DESCRIPTION" android:textAllCaps="true" android:textColor="@color/slate_400" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.05" />
+
+            <TextView android:id="@+id/tv_pr_description" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="No Description" android:textColor="@color/slate_700" android:textSize="14sp" android:textStyle="bold" android:singleLine="true" android:ellipsize="end" android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="4dp">
+
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@android:drawable/ic_menu_today" app:tint="@color/slate_400" />
+
+            <TextView android:id="@+id/tv_pr_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="N/A" android:textColor="@color/slate_500" android:textSize="12sp" android:textStyle="bold" android:layout_marginStart="6dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Right Item Count Box -->
+    <LinearLayout android:layout_width="64dp" android:layout_height="64dp" android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_menu_card" android:backgroundTint="#EFF6FF" android:layout_marginEnd="16dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ITEMS" android:textAllCaps="true" android:textColor="#60A5FA" android:textSize="10sp" android:textStyle="bold" />
+
+        <TextView android:id="@+id/tv_item_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#3B82F6" android:textSize="24sp" android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

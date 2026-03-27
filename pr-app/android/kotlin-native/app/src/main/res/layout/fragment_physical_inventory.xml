@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#0F172A">    <!-- bg-slate-900 -->
+
+    <!-- Custom Top Header -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="64dp" android:background="#1E293B" android:elevation="4dp">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@android:drawable/ic_menu_revert" app:tint="#F8FAFC" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <TextView android:id="@+id/header_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Physical Inventory" android:textSize="18sp" android:textStyle="bold" android:textColor="#F1F5F9" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- Bottom border -->
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#334155" app:layout_constraintBottom_toBottomOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+
+        <!-- FILTER FORM -->
+        <ScrollView android:id="@+id/layout_filter" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:fillViewport="true" android:visibility="visible">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Search Criteria" android:textSize="22sp" android:textStyle="bold" android:textColor="#F8FAFC" android:layout_marginBottom="24dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PI DOCUMENT NUMBER" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                <EditText android:id="@+id/edit_pi_doc_number" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 100000001" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="20dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PLANT" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                <EditText android:id="@+id/edit_plant" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 1000" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="20dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STORAGE LOCATION" android:textColor="#94A3B8" android:textStyle="bold" android:textAllCaps="true" android:textSize="12sp" android:layout_marginBottom="6dp" android:layout_marginStart="4dp"/>
+                <EditText android:id="@+id/edit_storage_location" android:layout_width="match_parent" android:layout_height="48dp" android:hint="e.g. 0001" android:textColorHint="#475569" android:textColor="#F8FAFC" android:inputType="text" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_input_dark" android:layout_marginBottom="32dp"/>
+
+                <Button android:id="@+id/btn_search" android:layout_width="match_parent" android:layout_height="52dp" android:text="Search PI Documents" android:textAllCaps="false" android:textStyle="bold" android:textSize="16sp" android:textColor="#FFFFFF" android:background="@drawable/bg_button_primary" app:backgroundTint="@null"/>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- LIST VIEW -->
+        <LinearLayout android:id="@+id/layout_list" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:visibility="gone">
+
+            <!-- Subheader for results -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical" android:background="#020617">                <!-- slate-950 -->
+
+                <TextView android:id="@+id/text_result_count" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="0 PI Docs found" android:textStyle="bold" android:textColor="#94A3B8"/>
+
+                <TextView android:id="@+id/btn_change_filters" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Filter" android:textStyle="bold" android:paddingVertical="6dp" android:paddingHorizontal="12dp" android:background="@drawable/bg_input_dark" android:textColor="#2563EB"/>
+            </LinearLayout>
+
+            <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" android:layout_marginTop="32dp" android:indeterminateTint="#3B82F6" android:layout_gravity="center_horizontal"/>
+
+            <TextView android:id="@+id/text_error" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:textColor="#EF4444" android:padding="16dp" android:background="#1E293B" android:visibility="gone"/>
+
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_pi_list" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingTop="8dp" android:paddingBottom="40dp" android:clipToPadding="false"/>
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

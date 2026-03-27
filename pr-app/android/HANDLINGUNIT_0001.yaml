@@ -1,0 +1,2503 @@
+openapi: 3.0.0
+info:
+  title: Handling Unit
+  version: 1.10.0
+  description: "The service contains handling unit header and item nodes, a serial number node, and a handling unit reference document node.\r\n\r\nWith this API, you can carry out the following operations:\r\n - Retrieve information from handling units, for example, read all handling units for a plant, read all products packed in a specific handling unit, or read all serial numbers for handling units. In addition, you can retrieve reference documents for simple and cross-delivery handling units in Warehouse Management storage locations.\r\n - Create handling units without reference to a document (non-assigned handling units).\r\n - Pack products or handling units into handling units, or repack or unpack products or handling units, in Warehouse Management storage locations.\r\n - Post goods movement for handling units. You can move handling units to different storage locations and transfer handling units from an Inventory Management storage location to a Warehouse Management storage bin.\r\n - Delete handling units. Deleting a handling unit results in unpacking the materials included and deleting the corresponding handling unit itself.\r\n - Create situations when IoT sensors attached to handling units exceed critical thresholds."
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/08/31a7112057480a8f61b8bf01b56202/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Create, read, delete, and post goods movement for handling units using this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Handling Unit Integration (SAP_COM_0364), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Outbound Processing (3BS)](https://me.sap.com/processnavigator/SolP/3BS " Link To BP ")', format: markdown}
+  - {text: '[Sell from Stock (BD9)](https://me.sap.com/processnavigator/SolP/BD9 " Link To BP ")', format: markdown}
+  - {text: '[Handling Unit Management (4MM)](https://me.sap.com/processnavigator/SolP/4MM " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_HANDLINGUNIT, format: plain}
+- name: Business Object
+  values:
+  - {text: Handling Unit, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_handlingunit/srvd_a2x/sap/handlingunit/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_handlingunit/srvd_a2x/sap/handlingunit/0001'}
+x-sap-extensible:
+  supported: manual
+  description: "If you are working with key user extensibility, the API can be extended by custom fields on the following business contexts (field usage for this API needs to be selected):\r\n* Handling Unit (HANDLINGUNIT)\r\n\r\n[How to add an extension field to an API](https://help.sap.com/docs/SAP_S4HANA_CLOUD/0f69f8fb28ac4bf48d2b57b9637e81fa/ce819b8557194ae0aa180ba4ac6a04de.html)"
+tags:
+- {name: Handling Unit}
+- {name: Handling Unit Alternative Identification}
+- {name: Handling Unit Item}
+- {name: Handling Unit Reference Document}
+- {name: Serial Number of Handling Unit Item}
+paths:
+  /HandlingUnit:
+    get:
+      summary: Get entities from HandlingUnit
+      tags: [Handling Unit]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, PackagingMaterial, PackagingMaterial desc, PackagingMaterialType, PackagingMaterialType desc, Plant, Plant desc, StorageLocation, StorageLocation desc, ShippingPoint, ShippingPoint desc, ParentHandlingUnitNumber, ParentHandlingUnitNumber desc, HighestLevelHandlingUnitNumber, HighestLevelHandlingUnitNumber desc, GrossWeight, GrossWeight desc, NetWeight, NetWeight desc, HandlingUnitMaxWeight, HandlingUnitMaxWeight desc, WeightUnit, WeightUnit desc, HandlingUnitTareWeight, HandlingUnitTareWeight desc, HandlingUnitTareWeightUnit, HandlingUnitTareWeightUnit desc, GrossVolume, GrossVolume desc, HandlingUnitNetVolume, HandlingUnitNetVolume desc, HandlingUnitMaxVolume, HandlingUnitMaxVolume desc, VolumeUnit, VolumeUnit desc, HandlingUnitTareVolume, HandlingUnitTareVolume desc, HandlingUnitTareVolumeUnit, HandlingUnitTareVolumeUnit desc, HandlingUnitLength, HandlingUnitLength desc, HandlingUnitWidth, HandlingUnitWidth desc, HandlingUnitHeight, HandlingUnitHeight desc, UnitOfMeasureDimension, UnitOfMeasureDimension desc, HandlingUnitReferenceDocument, HandlingUnitReferenceDocument desc, HandlingUnitRefDocType, HandlingUnitRefDocType desc, HandlingUnitHasCrossRefDoc, HandlingUnitHasCrossRefDoc desc, PackingInstruction, PackingInstruction desc, HandlingUnitSecondExternalId, HandlingUnitSecondExternalId desc, CreatedByUser, CreatedByUser desc, CreationDateTime, CreationDateTime desc, LastChangedByUser, LastChangedByUser desc, LastChangeDateTime, LastChangeDateTime desc, StorageType, StorageType desc, StorageSection, StorageSection desc, StorageBin, StorageBin desc, EWMResource, EWMResource desc, EWMConsolidationGroup, EWMConsolidationGroup desc, HandlingUnitIsClosed, HandlingUnitIsClosed desc, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsPlanned desc, EWMHandlingUnitIsInStock, EWMHandlingUnitIsInStock desc, EWMHandlingUnitIsLoaded, EWMHandlingUnitIsLoaded desc, EWMHUContentChangeIsBlocked, EWMHUContentChangeIsBlocked desc, EWMHUMovementChangeIsBlocked, EWMHUMovementChangeIsBlocked desc, EWMHUAttributeChangeIsBlocked, EWMHUAttributeChangeIsBlocked desc, EWMHUPostingChangeIsBlocked, EWMHUPostingChangeIsBlocked desc, EWMHUIsBlockedByCustoms, EWMHUIsBlockedByCustoms desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to HandlingUnit
+      tags: [Handling Unit]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/SAP__self.PackDiscreteMfgAutomatically:
+    post:
+      summary: Invoke action PackDiscreteMfgAutomatically
+      tags: [Handling Unit]
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ProductionOrder: {type: string, maxLength: 12}
+                Quantity:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 3
+                  multipleOf: 0.001
+                  minimum: -9.99999999999999E11
+                  maximum: 9.99999999999999E11
+                  example: 0
+                UnitOfMeasure: {type: string, maxLength: 3}
+                StorageLocation: {type: string, maxLength: 4}
+                Batch: {type: string, maxLength: 10}
+                PackingInstructionNumber: {type: string, maxLength: 20}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entity from HandlingUnit by key
+      tags: [Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in HandlingUnit
+      tags: [Handling Unit]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+    delete:
+      summary: Delete entity from HandlingUnit
+      tags: [Handling Unit]
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.PostDiscreteMfgGoodsReceipt:
+    post:
+      summary: Invoke action PostDiscreteMfgGoodsReceipt
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.MoveHandlingUnits:
+    post:
+      summary: Invoke action MoveHandlingUnits
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                HandlingUnitExternalID: {type: string, maxLength: 20}
+                HandlingUnitGoodsMovementEvent: {type: string, maxLength: 4}
+                ReceivingPlant: {type: string, maxLength: 4}
+                ReceivingStorageLocation: {type: string, maxLength: 4}
+                ReceivingStorageBin: {type: string, maxLength: 18}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitMoveResult_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.CreateSituation:
+    post:
+      summary: Invoke action CreateSituation
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                SensorMeasuredQuantity:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 3
+                  multipleOf: 0.001
+                  minimum: -9.99999999999999E11
+                  maximum: 9.99999999999999E11
+                  example: 0
+                SensorThresholdQuantity:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 3
+                  multipleOf: 0.001
+                  minimum: -9.99999999999999E11
+                  maximum: 9.99999999999999E11
+                  example: 0
+                UnitOfMeasureSAPCode: {type: string, maxLength: 3}
+                UnitOfMeasureISOCode: {type: string, maxLength: 3}
+                Longitude:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 12
+                  multipleOf: 1.0E-12
+                  minimum: -999.999999999999
+                  maximum: 999.999999999999
+                  example: 0
+                Latitude:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 12
+                  multipleOf: 1.0E-12
+                  minimum: -999.999999999999
+                  maximum: 999.999999999999
+                  example: 0
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.ReverseHandlingUnitLoading:
+    post:
+      summary: Invoke action ReverseHandlingUnitLoading
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.RepackHandlingUnitHeader:
+    post:
+      summary: Invoke action RepackHandlingUnitHeader
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ParentHandlingUnitNumber: {type: string, maxLength: 20}
+                EWMWorkCenter: {type: string, maxLength: 4}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.PostGoodsReceipt:
+    post:
+      summary: Invoke action PostGoodsReceipt
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/SAP__self.LoadHandlingUnit:
+    post:
+      summary: Invoke action LoadHandlingUnit
+      tags: [Handling Unit]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/_HandlingUnitAlternativeID:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entities from related _HandlingUnitAlternativeID
+      tags: [Handling Unit, Handling Unit Alternative Identification]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, EWMHndlgUnitAltvIDType, EWMHndlgUnitAltvIDType desc, EWMHndlgUnitAltvID, EWMHndlgUnitAltvID desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, EWMHndlgUnitAltvIDType, EWMHndlgUnitAltvID, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitAlternativeID_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/_HandlingUnitItem:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entities from related _HandlingUnitItem
+      tags: [Handling Unit, Handling Unit Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, StockItemUUID, StockItemUUID desc, HandlingUnitItem, HandlingUnitItem desc, HandlingUnitTypeOfContent, HandlingUnitTypeOfContent desc, HandlingUnitNestedExternalID, HandlingUnitNestedExternalID desc, HandlingUnitReferenceDocument, HandlingUnitReferenceDocument desc, HandlingUnitRefDocumentItem, HandlingUnitRefDocumentItem desc, Material, Material desc, Batch, Batch desc, Plant, Plant desc, StorageLocation, StorageLocation desc, HandlingUnitQuantity, HandlingUnitQuantity desc, HandlingUnitQuantityUnit, HandlingUnitQuantityUnit desc, HandlingUnitAltUnitOfMeasure, HandlingUnitAltUnitOfMeasure desc, HandlingUnitNrOfAuxPackgMat, HandlingUnitNrOfAuxPackgMat desc, HandlingUnitNumberOfSerialNumb, HandlingUnitNumberOfSerialNumb desc, SerialNumberProfile, SerialNumberProfile desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, StockItemUUID, HandlingUnitItem, HandlingUnitTypeOfContent, HandlingUnitNestedExternalID, HandlingUnitReferenceDocument, HandlingUnitRefDocumentItem, Material, Batch, Plant, StorageLocation, HandlingUnitQuantity, HandlingUnitQuantityUnit, HandlingUnitAltUnitOfMeasure, HandlingUnitNrOfAuxPackgMat, HandlingUnitNumberOfSerialNumb, SerialNumberProfile, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItemSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to related _HandlingUnitItem
+      tags: [Handling Unit, Handling Unit Item]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnit/{HandlingUnitExternalID}/{Warehouse}/_HandlingUnitReferenceDoc:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entities from related _HandlingUnitReferenceDoc
+      tags: [Handling Unit, Handling Unit Reference Document]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [Warehouse, Warehouse desc, HandlingUnitExternalID, HandlingUnitExternalID desc, HandlingUnitReferenceDocument, HandlingUnitReferenceDocument desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [Warehouse, HandlingUnitExternalID, HandlingUnitReferenceDocument]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitReferenceDoc_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitAlternativeID:
+    get:
+      summary: Get entities from HandlingUnitAlternativeID
+      tags: [Handling Unit Alternative Identification]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, EWMHndlgUnitAltvIDType, EWMHndlgUnitAltvIDType desc, EWMHndlgUnitAltvID, EWMHndlgUnitAltvID desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, EWMHndlgUnitAltvIDType, EWMHndlgUnitAltvID, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitAlternativeID_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to HandlingUnitAlternativeID
+      tags: [Handling Unit Alternative Identification]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitAlternativeID/{HandlingUnitExternalID}/{Warehouse}/{EWMHndlgUnitAltvIDType}:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: EWMHndlgUnitAltvIDType
+      in: path
+      required: true
+      description: Identification Type
+      schema: {type: string, maxLength: 1}
+    get:
+      summary: Get entity from HandlingUnitAlternativeID by key
+      tags: [Handling Unit Alternative Identification]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, EWMHndlgUnitAltvIDType, EWMHndlgUnitAltvID, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+    delete:
+      summary: Delete entity from HandlingUnitAlternativeID
+      tags: [Handling Unit Alternative Identification]
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitAlternativeID/{HandlingUnitExternalID}/{Warehouse}/{EWMHndlgUnitAltvIDType}/_HandlingUnit:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: EWMHndlgUnitAltvIDType
+      in: path
+      required: true
+      description: Identification Type
+      schema: {type: string, maxLength: 1}
+    get:
+      summary: Get related _HandlingUnit
+      tags: [Handling Unit Alternative Identification, Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitItem:
+    get:
+      summary: Get entities from HandlingUnitItem
+      tags: [Handling Unit Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, StockItemUUID, StockItemUUID desc, HandlingUnitItem, HandlingUnitItem desc, HandlingUnitTypeOfContent, HandlingUnitTypeOfContent desc, HandlingUnitNestedExternalID, HandlingUnitNestedExternalID desc, HandlingUnitReferenceDocument, HandlingUnitReferenceDocument desc, HandlingUnitRefDocumentItem, HandlingUnitRefDocumentItem desc, Material, Material desc, Batch, Batch desc, Plant, Plant desc, StorageLocation, StorageLocation desc, HandlingUnitQuantity, HandlingUnitQuantity desc, HandlingUnitQuantityUnit, HandlingUnitQuantityUnit desc, HandlingUnitAltUnitOfMeasure, HandlingUnitAltUnitOfMeasure desc, HandlingUnitNrOfAuxPackgMat, HandlingUnitNrOfAuxPackgMat desc, HandlingUnitNumberOfSerialNumb, HandlingUnitNumberOfSerialNumb desc, SerialNumberProfile, SerialNumberProfile desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, StockItemUUID, HandlingUnitItem, HandlingUnitTypeOfContent, HandlingUnitNestedExternalID, HandlingUnitReferenceDocument, HandlingUnitRefDocumentItem, Material, Batch, Plant, StorageLocation, HandlingUnitQuantity, HandlingUnitQuantityUnit, HandlingUnitAltUnitOfMeasure, HandlingUnitNrOfAuxPackgMat, HandlingUnitNumberOfSerialNumb, SerialNumberProfile, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItemSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to HandlingUnitItem
+      tags: [Handling Unit Item]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitItem/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    get:
+      summary: Get entity from HandlingUnitItem by key
+      tags: [Handling Unit Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, StockItemUUID, HandlingUnitItem, HandlingUnitTypeOfContent, HandlingUnitNestedExternalID, HandlingUnitReferenceDocument, HandlingUnitRefDocumentItem, Material, Batch, Plant, StorageLocation, HandlingUnitQuantity, HandlingUnitQuantityUnit, HandlingUnitAltUnitOfMeasure, HandlingUnitNrOfAuxPackgMat, HandlingUnitNumberOfSerialNumb, SerialNumberProfile, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItemSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    delete:
+      summary: Delete entity from HandlingUnitItem
+      tags: [Handling Unit Item]
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitItem/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/SAP__self.RepackHandlingUnitItem:
+    post:
+      summary: Invoke action RepackHandlingUnitItem
+      tags: [Handling Unit Item]
+      parameters:
+      - name: HandlingUnitExternalID
+        in: path
+        required: true
+        description: External Handling Unit Identification
+        schema: {type: string, maxLength: 20}
+      - name: Warehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+      - name: StockItemUUID
+        in: path
+        required: true
+        description: GUID Stock Item
+        schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ParentHandlingUnitNumber: {type: string, maxLength: 20}
+                HandlingUnitQuantity:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 15
+                  x-sap-scale: 3
+                  multipleOf: 0.001
+                  minimum: -9.99999999999999E11
+                  maximum: 9.99999999999999E11
+                  example: 0
+                HandlingUnitQuantityUnit: {type: string, maxLength: 3}
+                UnitOfMeasureSAPCode: {type: string, maxLength: 3}
+                UnitOfMeasureISOCode: {type: string, maxLength: 3}
+                EWMWorkCenter: {type: string, maxLength: 4}
+                _SerialNumber:
+                  type: array
+                  items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.D_HNDLGUNITITMREPACKSRLNMBRP'}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitRepackItemResult_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitItem/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/_HandlingUnit:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    get:
+      summary: Get related _HandlingUnit
+      tags: [Handling Unit Item, Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitItem/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/_HandlingUnitItemSerialNumber:
+    parameters:
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    get:
+      summary: Get entities from related _HandlingUnitItemSerialNumber
+      tags: [Handling Unit Item, Serial Number of Handling Unit Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitItem, HandlingUnitItem desc, HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, StockItemUUID, StockItemUUID desc, SerialNumber, SerialNumber desc, Equipment, Equipment desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitItem, HandlingUnitExternalID, Warehouse, StockItemUUID, SerialNumber, Equipment]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitSerialNumber_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to related _HandlingUnitItemSerialNumber
+      tags: [Handling Unit Item, Serial Number of Handling Unit Item]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitReferenceDocument:
+    get:
+      summary: Get entities from HandlingUnitReferenceDocument
+      tags: [Handling Unit Reference Document]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [Warehouse, Warehouse desc, HandlingUnitExternalID, HandlingUnitExternalID desc, HandlingUnitReferenceDocument, HandlingUnitReferenceDocument desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [Warehouse, HandlingUnitExternalID, HandlingUnitReferenceDocument]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitReferenceDoc_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitReferenceDocument/{Warehouse}/{HandlingUnitExternalID}/{HandlingUnitReferenceDocument}:
+    parameters:
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: HandlingUnitReferenceDocument
+      in: path
+      required: true
+      description: 'key: HandlingUnitReferenceDocument'
+      schema: {type: string, maxLength: 20}
+    get:
+      summary: Get entity from HandlingUnitReferenceDocument by key
+      tags: [Handling Unit Reference Document]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [Warehouse, HandlingUnitExternalID, HandlingUnitReferenceDocument]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitReferenceDocument/{Warehouse}/{HandlingUnitExternalID}/{HandlingUnitReferenceDocument}/_HandlingUnit:
+    parameters:
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: HandlingUnitReferenceDocument
+      in: path
+      required: true
+      description: 'key: HandlingUnitReferenceDocument'
+      schema: {type: string, maxLength: 20}
+    get:
+      summary: Get related _HandlingUnit
+      tags: [Handling Unit Reference Document, Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitSerialNumber:
+    get:
+      summary: Get entities from HandlingUnitSerialNumber
+      tags: [Serial Number of Handling Unit Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitItem, HandlingUnitItem desc, HandlingUnitExternalID, HandlingUnitExternalID desc, Warehouse, Warehouse desc, StockItemUUID, StockItemUUID desc, SerialNumber, SerialNumber desc, Equipment, Equipment desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitItem, HandlingUnitExternalID, Warehouse, StockItemUUID, SerialNumber, Equipment]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of HandlingUnitSerialNumber_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /HandlingUnitSerialNumber/{HandlingUnitItem}/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/{SerialNumber}:
+    parameters:
+    - name: HandlingUnitItem
+      in: path
+      required: true
+      description: Handling Unit Item
+      schema: {type: string, maxLength: 6}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    - name: SerialNumber
+      in: path
+      required: true
+      description: Serial Number
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get entity from HandlingUnitSerialNumber by key
+      tags: [Serial Number of Handling Unit Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitItem, HandlingUnitExternalID, Warehouse, StockItemUUID, SerialNumber, Equipment]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /HandlingUnitSerialNumber/{HandlingUnitItem}/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/{SerialNumber}/_HandlingUnit
+  : parameters:
+    - name: HandlingUnitItem
+      in: path
+      required: true
+      description: Handling Unit Item
+      schema: {type: string, maxLength: 6}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    - name: SerialNumber
+      in: path
+      required: true
+      description: Serial Number
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get related _HandlingUnit
+      tags: [Serial Number of Handling Unit Item, Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, PackagingMaterial, PackagingMaterialType, Plant, StorageLocation, ShippingPoint, ParentHandlingUnitNumber, HighestLevelHandlingUnitNumber, GrossWeight, NetWeight, HandlingUnitMaxWeight, WeightUnit, HandlingUnitTareWeight, HandlingUnitTareWeightUnit, GrossVolume, HandlingUnitNetVolume, HandlingUnitMaxVolume, VolumeUnit, HandlingUnitTareVolume, HandlingUnitTareVolumeUnit, HandlingUnitLength, HandlingUnitWidth, HandlingUnitHeight, UnitOfMeasureDimension, HandlingUnitReferenceDocument, HandlingUnitRefDocType, HandlingUnitHasCrossRefDoc, PackingInstruction, HandlingUnitSecondExternalId, CreatedByUser, CreationDateTime, LastChangedByUser, LastChangeDateTime, StorageType, StorageSection, StorageBin, EWMResource, EWMConsolidationGroup, HandlingUnitIsClosed, EWMHandlingUnitIsPlanned, EWMHandlingUnitIsInStock, EWMHandlingUnitIsLoaded, EWMHUContentChangeIsBlocked, EWMHUMovementChangeIsBlocked, EWMHUAttributeChangeIsBlocked, EWMHUPostingChangeIsBlocked, EWMHUIsBlockedByCustoms, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnitAlternativeID, _HandlingUnitItem, _HandlingUnitReferenceDoc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /HandlingUnitSerialNumber/{HandlingUnitItem}/{HandlingUnitExternalID}/{Warehouse}/{StockItemUUID}/{SerialNumber}/_HandlingUnitItem
+  : parameters:
+    - name: HandlingUnitItem
+      in: path
+      required: true
+      description: Handling Unit Item
+      schema: {type: string, maxLength: 6}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: External Handling Unit Identification
+      schema: {type: string, maxLength: 20}
+    - name: Warehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: StockItemUUID
+      in: path
+      required: true
+      description: GUID Stock Item
+      schema: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef}
+    - name: SerialNumber
+      in: path
+      required: true
+      description: Serial Number
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get related _HandlingUnitItem
+      tags: [Serial Number of Handling Unit Item, Handling Unit Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [HandlingUnitExternalID, Warehouse, StockItemUUID, HandlingUnitItem, HandlingUnitTypeOfContent, HandlingUnitNestedExternalID, HandlingUnitReferenceDocument, HandlingUnitRefDocumentItem, Material, Batch, Plant, StorageLocation, HandlingUnitQuantity, HandlingUnitQuantityUnit, HandlingUnitAltUnitOfMeasure, HandlingUnitNrOfAuxPackgMat, HandlingUnitNumberOfSerialNumb, SerialNumberProfile, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _HandlingUnit, _HandlingUnitItemSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET HandlingUnit HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMHndlgUnitAltvIDType: {type: string, maxLength: 1, title: Identification Type}
+        EWMHndlgUnitAltvID: {type: string, maxLength: 40, title: Alternative HU ID, description: Alternative Handling Unit Identification}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message'}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+      title: Handling Unit Alternative Identification
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type-create:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMHndlgUnitAltvIDType: {type: string, maxLength: 1, title: Identification Type}
+        EWMHndlgUnitAltvID: {type: string, maxLength: 40, title: Alternative HU ID, description: Alternative Handling Unit Identification}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-create'}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create'}
+      required: [HandlingUnitExternalID, Warehouse, EWMHndlgUnitAltvIDType]
+      title: Handling Unit Alternative Identification (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type-update:
+      type: object
+      properties:
+        EWMHndlgUnitAltvID: {type: string, maxLength: 40, title: Alternative HU ID, description: Alternative Handling Unit Identification}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-update'}
+      title: Handling Unit Alternative Identification (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type:
+      type: object
+      properties:
+        HandlingUnitItem: {type: string, maxLength: 6, title: HU item, description: Handling Unit Item}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        StockItemUUID: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID Stock, description: GUID Stock Item}
+        SerialNumber: {type: string, maxLength: 18, title: Serial Number}
+        Equipment: {type: string, maxLength: 18, title: Equipment, description: Equipment Number}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        _HandlingUnitItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+      title: Serial Number of Handling Unit Item
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type-create:
+      type: object
+      properties:
+        SerialNumber: {type: string, maxLength: 18, title: Serial Number}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create'}
+        _HandlingUnitItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-create'}
+      required: [SerialNumber]
+      title: Serial Number of Handling Unit Item (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type-update: {type: object, title: Serial Number of Handling Unit Item (for update)}
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        StockItemUUID: {type: string, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID Stock, description: GUID Stock Item}
+        HandlingUnitItem: {type: string, maxLength: 6, title: HU item, description: Handling Unit Item}
+        HandlingUnitTypeOfContent: {type: string, maxLength: 1, title: Item type, description: Type of Handling-unit Item Content}
+        HandlingUnitNestedExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 10, title: Delivery}
+        HandlingUnitRefDocumentItem: {type: string, maxLength: 10}
+        Material: {type: string, maxLength: 40, title: Material, description: Material Number}
+        Batch: {type: string, maxLength: 10, title: Batch, description: Batch Number}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        StorageLocation: {type: string, maxLength: 4, title: Storage Location}
+        HandlingUnitQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Packed Quantity
+          description: Base Quantity Packed in the Handling Unit Item
+        HandlingUnitQuantityUnit: {type: string, maxLength: 3, title: Handling unit UoM, description: Base Unit of Measure of the Quantity to be Packed (VEMNG)}
+        HandlingUnitAltUnitOfMeasure: {type: string, maxLength: 3, title: Unit of measure, description: Alternative unit of measure for stock unit of measure}
+        HandlingUnitNrOfAuxPackgMat: {type: integer, format: int32, title: No. aux.packg. matls, description: Number of Auxiliary Packaging Materials in the HU Item}
+        HandlingUnitNumberOfSerialNumb: {type: integer, format: int32, title: No.serial numbers, description: Number of serial numbers}
+        SerialNumberProfile: {type: string, maxLength: 4, title: Serial No. Profile, description: Serial Number Profile}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message'}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+        _HandlingUnitItemSerialNumber:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type'}
+      title: Handling Unit Item
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-create:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        HandlingUnitTypeOfContent: {type: string, maxLength: 1, title: Item type, description: Type of Handling-unit Item Content}
+        HandlingUnitNestedExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 10, title: Delivery}
+        HandlingUnitRefDocumentItem: {type: string, maxLength: 10}
+        Material: {type: string, maxLength: 40, title: Material, description: Material Number}
+        Batch: {type: string, maxLength: 10, title: Batch, description: Batch Number}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        StorageLocation: {type: string, maxLength: 4, title: Storage Location}
+        HandlingUnitQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Packed Quantity
+          description: Base Quantity Packed in the Handling Unit Item
+        HandlingUnitQuantityUnit: {type: string, maxLength: 3, title: Handling unit UoM, description: Base Unit of Measure of the Quantity to be Packed (VEMNG)}
+        HandlingUnitAltUnitOfMeasure: {type: string, maxLength: 3, title: Unit of measure, description: Alternative unit of measure for stock unit of measure}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-create'}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create'}
+        _HandlingUnitItemSerialNumber:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitSerialNumber_Type-create'}
+      required: [HandlingUnitExternalID, Warehouse]
+      title: Handling Unit Item (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-update:
+      type: object
+      properties:
+        HandlingUnitTypeOfContent: {type: string, maxLength: 1, title: Item type, description: Type of Handling-unit Item Content}
+        HandlingUnitNestedExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 10, title: Delivery}
+        HandlingUnitRefDocumentItem: {type: string, maxLength: 10}
+        Material: {type: string, maxLength: 40, title: Material, description: Material Number}
+        Batch: {type: string, maxLength: 10, title: Batch, description: Batch Number}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        StorageLocation: {type: string, maxLength: 4, title: Storage Location}
+        HandlingUnitQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Packed Quantity
+          description: Base Quantity Packed in the Handling Unit Item
+        HandlingUnitQuantityUnit: {type: string, maxLength: 3, title: Handling unit UoM, description: Base Unit of Measure of the Quantity to be Packed (VEMNG)}
+        HandlingUnitAltUnitOfMeasure: {type: string, maxLength: 3, title: Unit of measure, description: Alternative unit of measure for stock unit of measure}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-update'}
+      title: Handling Unit Item (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging Mat. Type, description: Packaging Material Type}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        StorageLocation: {type: string, maxLength: 4, title: Storage Location}
+        ShippingPoint: {type: string, maxLength: 4, title: Shipping Point, description: Shipping Point / Receiving Point}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HighestLevelHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        NetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading Weight of Handling Unit
+        HandlingUnitMaxWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Load Weight
+          description: Allowed Loading Weight of a Handling Unit
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        HandlingUnitTareWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Weight
+          description: Tare Weight of Handling Unit
+        HandlingUnitTareWeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        GrossVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Volume
+          description: Total Volume of Handling Unit
+        HandlingUnitNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading Volume of Handling Unit
+        HandlingUnitMaxVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Volume
+          description: Allowed Loading Volume for Handling Unit
+        VolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitTareVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Volume
+          description: Tare Volume of Handling Unit
+        HandlingUnitTareVolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitLength:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Length
+        HandlingUnitWidth:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Width
+        HandlingUnitHeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Height
+        UnitOfMeasureDimension: {type: string, maxLength: 3, title: Unit of Dimension, description: Unit of Dimension for Length/Width/Height}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 20}
+        HandlingUnitRefDocType: {type: string, maxLength: 2, title: Reference document for handling unit, description: Packing Object}
+        HandlingUnitHasCrossRefDoc: {type: boolean, title: Truth Value, description: 'Truth Value: True/False'}
+        PackingInstruction: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Packing object, description: Unique internal packing object number}
+        HandlingUnitSecondExternalId: {type: string, maxLength: 20, title: Packing Instruction, description: Handling Unit's 2nd External Identification}
+        CreatedByUser: {type: string, maxLength: 12, title: Created By, description: Name of Person Responsible for Creating the Object}
+        CreationDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        LastChangedByUser: {type: string, maxLength: 12, title: Date and time of creation, description: Name of Person Who Changed Object}
+        LastChangeDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        StorageType: {type: string, maxLength: 4, title: Date and time of last change, description: Storage Type}
+        StorageSection: {type: string, maxLength: 4, title: Storage Section}
+        StorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMResource: {type: string, maxLength: 18, title: Resource, description: Resource (Means of Transportation or User)}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        HandlingUnitIsClosed: {type: boolean, title: Closed Pack Material, description: Closed Packaging Material}
+        EWMHandlingUnitIsPlanned: {type: boolean, title: HU Planned/Notified, description: Handling Unit Is Planned or Notified}
+        EWMHandlingUnitIsInStock: {type: boolean, title: Is HU in Stock, description: Handling Unit Is in Stock}
+        EWMHandlingUnitIsLoaded: {type: boolean, title: Is HU Loaded, description: Handling Unit Is Loaded}
+        EWMHUContentChangeIsBlocked: {type: boolean, title: Content Chg. Blocked, description: Handling Unit Content Change Is Blocked}
+        EWMHUMovementChangeIsBlocked: {type: boolean, title: Is Movement Blocked, description: Handling Unit Movement Is Blocked}
+        EWMHUAttributeChangeIsBlocked: {type: boolean, title: Attr. Change Blocked, description: Handling Unit Attribute Change Is Blocked}
+        EWMHUPostingChangeIsBlocked: {type: boolean, title: Posting Change Block, description: Handling Unit Is Blocked for Posting Change}
+        EWMHUIsBlockedByCustoms: {type: boolean, title: Customs Block, description: Handling Unit Is Blocked by Customs}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message'}
+        _HandlingUnitAlternativeID:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type'}
+        _HandlingUnitItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType'}
+        _HandlingUnitReferenceDoc:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type'}
+      title: Handling Unit
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging Mat. Type, description: Packaging Material Type}
+        HighestLevelHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        NetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading Weight of Handling Unit
+        HandlingUnitMaxWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Load Weight
+          description: Allowed Loading Weight of a Handling Unit
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        HandlingUnitTareWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Weight
+          description: Tare Weight of Handling Unit
+        HandlingUnitTareWeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        GrossVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Volume
+          description: Total Volume of Handling Unit
+        HandlingUnitNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading Volume of Handling Unit
+        HandlingUnitMaxVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Volume
+          description: Allowed Loading Volume for Handling Unit
+        VolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitTareVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Volume
+          description: Tare Volume of Handling Unit
+        HandlingUnitTareVolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitLength:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Length
+        HandlingUnitWidth:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Width
+        HandlingUnitHeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Height
+        UnitOfMeasureDimension: {type: string, maxLength: 3, title: Unit of Dimension, description: Unit of Dimension for Length/Width/Height}
+        HandlingUnitHasCrossRefDoc: {type: boolean, title: Truth Value, description: 'Truth Value: True/False'}
+        PackingInstruction: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Packing object, description: Unique internal packing object number}
+        HandlingUnitSecondExternalId: {type: string, maxLength: 20, title: Packing Instruction, description: Handling Unit's 2nd External Identification}
+        StorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMResource: {type: string, maxLength: 18, title: Resource, description: Resource (Means of Transportation or User)}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        EWMHUContentChangeIsBlocked: {type: boolean, title: Content Chg. Blocked, description: Handling Unit Content Change Is Blocked}
+        EWMHUMovementChangeIsBlocked: {type: boolean, title: Is Movement Blocked, description: Handling Unit Movement Is Blocked}
+        EWMHUAttributeChangeIsBlocked: {type: boolean, title: Attr. Change Blocked, description: Handling Unit Attribute Change Is Blocked}
+        EWMHUPostingChangeIsBlocked: {type: boolean, title: Posting Change Block, description: Handling Unit Is Blocked for Posting Change}
+        EWMHUIsBlockedByCustoms: {type: boolean, title: Customs Block, description: Handling Unit Is Blocked by Customs}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-create'}
+        _HandlingUnitAlternativeID:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitAlternativeID_Type-create'}
+        _HandlingUnitItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitItemType-create'}
+        _HandlingUnitReferenceDoc:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type-create'}
+      required: [HandlingUnitExternalID, Warehouse]
+      title: Handling Unit (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-update:
+      type: object
+      properties:
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging Mat. Type, description: Packaging Material Type}
+        HighestLevelHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        NetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading Weight of Handling Unit
+        HandlingUnitMaxWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Load Weight
+          description: Allowed Loading Weight of a Handling Unit
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        HandlingUnitTareWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Weight
+          description: Tare Weight of Handling Unit
+        HandlingUnitTareWeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+        GrossVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Volume
+          description: Total Volume of Handling Unit
+        HandlingUnitNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading Volume of Handling Unit
+        HandlingUnitMaxVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Allowed Volume
+          description: Allowed Loading Volume for Handling Unit
+        VolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitTareVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Tare Volume
+          description: Tare Volume of Handling Unit
+        HandlingUnitTareVolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        HandlingUnitLength:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Length
+        HandlingUnitWidth:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Width
+        HandlingUnitHeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 13
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.999999999999E9
+          maximum: 9.999999999999E9
+          example: 0
+          title: Height
+        UnitOfMeasureDimension: {type: string, maxLength: 3, title: Unit of Dimension, description: Unit of Dimension for Length/Width/Height}
+        HandlingUnitHasCrossRefDoc: {type: boolean, title: Truth Value, description: 'Truth Value: True/False'}
+        PackingInstruction: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Packing object, description: Unique internal packing object number}
+        HandlingUnitSecondExternalId: {type: string, maxLength: 20, title: Packing Instruction, description: Handling Unit's 2nd External Identification}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        EWMHUContentChangeIsBlocked: {type: boolean, title: Content Chg. Blocked, description: Handling Unit Content Change Is Blocked}
+        EWMHUMovementChangeIsBlocked: {type: boolean, title: Is Movement Blocked, description: Handling Unit Movement Is Blocked}
+        EWMHUAttributeChangeIsBlocked: {type: boolean, title: Attr. Change Blocked, description: Handling Unit Attribute Change Is Blocked}
+        EWMHUPostingChangeIsBlocked: {type: boolean, title: Posting Change Block, description: Handling Unit Is Blocked for Posting Change}
+        EWMHUIsBlockedByCustoms: {type: boolean, title: Customs Block, description: Handling Unit Is Blocked by Customs}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-update'}
+      title: Handling Unit (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type:
+      type: object
+      properties:
+        Warehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 20}
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType'}
+      title: Handling Unit Reference Document
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type-create:
+      type: object
+      properties:
+        _HandlingUnit: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitType-create'}
+      title: Handling Unit Reference Document (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitReferenceDoc_Type-update: {type: object, title: Handling Unit Reference Document (for update)}
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitRepackItemResult_Type:
+      type: object
+      properties:
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: LIME GUID, description: 'LIME GUID for HUs, Locations or Stock Items'}
+      title: HandlingUnitRepackItemResult_Type
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitRepackItemResult_Type-create:
+      type: object
+      properties:
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: LIME GUID, description: 'LIME GUID for HUs, Locations or Stock Items'}
+      title: HandlingUnitRepackItemResult_Type (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitRepackItemResult_Type-update:
+      type: object
+      properties:
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        ParentHandlingUnitUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Parent, description: Parent GUID}
+        StockItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: LIME GUID, description: 'LIME GUID for HUs, Locations or Stock Items'}
+      title: HandlingUnitRepackItemResult_Type (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.D_HNDLGUNITITMREPACKSRLNMBRP:
+      type: object
+      properties:
+        SerialNumber: {type: string, maxLength: 18, title: Serial Number}
+      title: D_HNDLGUNITITMREPACKSRLNMBRP
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.D_HNDLGUNITITMREPACKSRLNMBRP-create:
+      type: object
+      properties:
+        SerialNumber: {type: string, maxLength: 18, title: Serial Number}
+      title: D_HNDLGUNITITMREPACKSRLNMBRP (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.D_HNDLGUNITITMREPACKSRLNMBRP-update:
+      type: object
+      properties:
+        SerialNumber: {type: string, maxLength: 18, title: Serial Number}
+      title: D_HNDLGUNITITMREPACKSRLNMBRP (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitMoveResult_Type:
+      type: object
+      properties:
+        CreatedByUser: {type: string, maxLength: 12, title: Created By, description: Name of Person Responsible for Creating the Object}
+        CreationDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Created On, description: Creation Date}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        HandlingUnitCharUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: UUID, description: Type of Date used in the Shipping Label for Handling Units}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitInternalStatus: {type: string, maxLength: 4, title: HU Status, description: Handling Unit Status}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 20, title: Object Key, description: Key for Object to Which the Handling Unit is Assigned}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging matl type, description: Packaging Material Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: Handling Unit Identification}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        ReceivingStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        ReceivingStorageLocation: {type: string, maxLength: 4, title: Receiving stor. loc., description: Receiving/issuing storage location}
+        Warehouse: {type: string, maxLength: 3, title: Warehouse Number, description: Warehouse Number / Warehouse Complex}
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+      title: HandlingUnitMoveResult_Type
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitMoveResult_Type-create:
+      type: object
+      properties:
+        CreatedByUser: {type: string, maxLength: 12, title: Created By, description: Name of Person Responsible for Creating the Object}
+        CreationDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Created On, description: Creation Date}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        HandlingUnitCharUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: UUID, description: Type of Date used in the Shipping Label for Handling Units}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitInternalStatus: {type: string, maxLength: 4, title: HU Status, description: Handling Unit Status}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 20, title: Object Key, description: Key for Object to Which the Handling Unit is Assigned}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging matl type, description: Packaging Material Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: Handling Unit Identification}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        ReceivingStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        ReceivingStorageLocation: {type: string, maxLength: 4, title: Receiving stor. loc., description: Receiving/issuing storage location}
+        Warehouse: {type: string, maxLength: 3, title: Warehouse Number, description: Warehouse Number / Warehouse Complex}
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+      title: HandlingUnitMoveResult_Type (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.HandlingUnitMoveResult_Type-update:
+      type: object
+      properties:
+        CreatedByUser: {type: string, maxLength: 12, title: Created By, description: Name of Person Responsible for Creating the Object}
+        CreationDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Created On, description: Creation Date}
+        GrossWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Weight
+          description: Total Weight of Handling Unit
+        HandlingUnitCharUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: UUID, description: Type of Date used in the Shipping Label for Handling Units}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit, description: External Handling Unit Identification}
+        HandlingUnitInternalStatus: {type: string, maxLength: 4, title: HU Status, description: Handling Unit Status}
+        HandlingUnitReferenceDocument: {type: string, maxLength: 20, title: Object Key, description: Key for Object to Which the Handling Unit is Assigned}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        PackagingMaterialType: {type: string, maxLength: 4, title: Packaging matl type, description: Packaging Material Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Handling Unit, description: Handling Unit Identification}
+        Plant: {type: string, maxLength: 4, title: Plant}
+        ReceivingStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        ReceivingStorageLocation: {type: string, maxLength: 4, title: Receiving stor. loc., description: Receiving/issuing storage location}
+        Warehouse: {type: string, maxLength: 3, title: Warehouse Number, description: Warehouse Number / Warehouse Complex}
+        WeightUnit: {type: string, maxLength: 3, title: Unit of Weight}
+      title: HandlingUnitMoveResult_Type (for update)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_handlingunit.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_HANDLINGUNIT': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_HANDLINGUNIT']
+- BasicAuth: []

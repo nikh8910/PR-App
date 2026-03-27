@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="slate_950">#020617</color>
+    <color name="slate_900">#0F172A</color>
+    <color name="slate_800">#1E293B</color>
+    <color name="slate_700">#334155</color>
+    <color name="slate_600">#475569</color>
+    <color name="slate_500">#64748B</color>
+    <color name="slate_400">#94A3B8</color>
+    <color name="slate_300">#CBD5E1</color>
+    <color name="slate_200">#E2E8F0</color>
+    <color name="slate_100">#F1F5F9</color>
+    <color name="slate_50">#F8FAFC</color>
+
+    <color name="blue_700">#1D4ED8</color>
+    <color name="blue_600">#2563EB</color>
+    <color name="blue_500">#3B82F6</color>
+
+    <color name="red_500">#EF4444</color>
+    <color name="green_500">#22C55E</color>
+
+    <color name="brand_blue">#002957</color>
+    <color name="brand_light_blue">#0ea5e9</color>
+    <color name="brand_lime">#84cc16</color>
+    <color name="brand_dark_blue">#003673</color>
+
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>

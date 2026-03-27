@@ -1,0 +1,533 @@
+openapi: 3.0.0
+info:
+  title: Plant Configuration
+  version: 1.0.1
+  description: This service enables you to retrieve plant configuration information using the OData protocol with filter data provided in the payload.
+externalDocs:
+  description: Business Documentation
+  url: https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/0f/c562d008b64acc8d57170ab718b9f0/frameset.htm
+x-sap-api-type: ODATAV4
+x-sap-shortText: Use this synchronous inbound service to read plant configuration information
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - text: Material Document Integration (SAP_COM_0108)
+    format: plain
+  - text: IC Configure - Variant Configuration Bundle Model Integration (SAP_COM_0932)
+    format: plain
+- name: Scope Items
+  values:
+  - text: '[Core Inventory Management (BMC)](https://me.sap.com/processnavigator/SolP/BMC " Link To BP ")'
+    format: markdown
+  - text: '[Core Inventory Management (OMC)](https://me.sap.com/processnavigator/SolP/OMC " Link To BP ")'
+    format: markdown
+  - text: '[Set Up Advanced Solution Bundle - NO SUCCESSOR (6W9)](https://me.sap.com/processnavigator/SolP/6W9 " Link To BP ")'
+    format: markdown
+- name: Authentication Methods
+  values:
+  - text: x509
+    format: plain
+- name: Service Group Name
+  values:
+  - text: API_PLANT_2
+    format: plain
+- name: Business Object
+  values:
+  - text: Plant
+    format: plain
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001
+  variables:
+    host:
+      default: ''
+    port:
+      default: ''
+- url: https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_plant_2/srvd_a2x/sap/plant/0001
+x-sap-extensible:
+  supported: 'no'
+tags:
+- name: Plant
+paths:
+  /Plant:
+    get:
+      summary: Get entities from Plant
+      tags:
+      - Plant
+      parameters:
+      - $ref: '#/components/parameters/top'
+      - $ref: '#/components/parameters/skip'
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema:
+          type: string
+      - $ref: '#/components/parameters/count'
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - Plant
+            - Plant desc
+            - PlantName
+            - PlantName desc
+            - ValuationArea
+            - ValuationArea desc
+            - PlantCustomer
+            - PlantCustomer desc
+            - PlantSupplier
+            - PlantSupplier desc
+            - FactoryCalendar
+            - FactoryCalendar desc
+            - DefaultPurchasingOrganization
+            - DefaultPurchasingOrganization desc
+            - SalesOrganization
+            - SalesOrganization desc
+            - AddressID
+            - AddressID desc
+            - PlantCategory
+            - PlantCategory desc
+            - DistributionChannel
+            - DistributionChannel desc
+            - Division
+            - Division desc
+            - Language
+            - Language desc
+            - IsMarkedForArchiving
+            - IsMarkedForArchiving desc
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - Plant
+            - PlantName
+            - ValuationArea
+            - PlantCustomer
+            - PlantSupplier
+            - FactoryCalendar
+            - DefaultPurchasingOrganization
+            - SalesOrganization
+            - AddressID
+            - PlantCategory
+            - DistributionChannel
+            - Division
+            - Language
+            - IsMarkedForArchiving
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of PlantType
+                type: object
+                properties:
+                  '@odata.count':
+                    $ref: '#/components/schemas/count'
+                  value:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_plant_2.v0001.PlantType'
+        4XX:
+          $ref: '#/components/responses/error'
+  /Plant/{Plant}:
+    parameters:
+    - name: Plant
+      in: path
+      required: true
+      description: Plant
+      schema:
+        type: string
+        maxLength: 4
+    get:
+      summary: Get entity from Plant by key
+      tags:
+      - Plant
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - Plant
+            - PlantName
+            - ValuationArea
+            - PlantCustomer
+            - PlantSupplier
+            - FactoryCalendar
+            - DefaultPurchasingOrganization
+            - SalesOrganization
+            - AddressID
+            - PlantCategory
+            - DistributionChannel
+            - Division
+            - Language
+            - IsMarkedForArchiving
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_plant_2.v0001.PlantType'
+        4XX:
+          $ref: '#/components/responses/error'
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags:
+      - Batch Requests
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema:
+              type: string
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET Plant HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema:
+                type: string
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX:
+          $ref: '#/components/responses/error'
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_plant_2.v0001.PlantType:
+      type: object
+      properties:
+        Plant:
+          type: string
+          maxLength: 4
+          title: Plant
+        PlantName:
+          type: string
+          maxLength: 30
+          title: Plant Name
+        ValuationArea:
+          type: string
+          maxLength: 4
+          title: Valuation Area
+        PlantCustomer:
+          type: string
+          maxLength: 10
+          title: Customer No Plant
+          description: Customer Number of Plant
+        PlantSupplier:
+          type: string
+          maxLength: 10
+          title: Sppl. No. Plnt
+          description: Supplier Number of Plant
+        FactoryCalendar:
+          type: string
+          maxLength: 2
+          title: Factory Calendar
+          description: Factory calendar key
+        DefaultPurchasingOrganization:
+          type: string
+          maxLength: 4
+          title: Purch. Organization
+          description: Purchasing Organization
+        SalesOrganization:
+          type: string
+          maxLength: 4
+          title: Sls Organization ICB
+          description: Sales Organization for Intercompany Billing
+        AddressID:
+          type: string
+          maxLength: 10
+          title: Address
+        PlantCategory:
+          type: string
+          maxLength: 1
+          title: Plant Cat.
+          description: Plant category
+        DistributionChannel:
+          type: string
+          maxLength: 2
+          title: Distrib.Channel
+          description: Distribution Channel for Intercompany billing
+        Division:
+          type: string
+          maxLength: 2
+          x-sap-object-node-type-reference: Division
+          title: Interco. Billing Div
+          description: Division for Intercompany Billing
+        Language:
+          type: string
+          maxLength: 2
+          title: Language Key
+        IsMarkedForArchiving:
+          type: boolean
+          title: Archiving Flag
+          description: Central archiving marker for master record
+      title: Plant
+    com.sap.gateway.srvd_a2x.api_plant_2.v0001.PlantType-create:
+      type: object
+      properties:
+        Plant:
+          type: string
+          maxLength: 4
+          title: Plant
+        PlantName:
+          type: string
+          maxLength: 30
+          title: Plant Name
+        ValuationArea:
+          type: string
+          maxLength: 4
+          title: Valuation Area
+        PlantCustomer:
+          type: string
+          maxLength: 10
+          title: Customer No Plant
+          description: Customer Number of Plant
+        PlantSupplier:
+          type: string
+          maxLength: 10
+          title: Sppl. No. Plnt
+          description: Supplier Number of Plant
+        FactoryCalendar:
+          type: string
+          maxLength: 2
+          title: Factory Calendar
+          description: Factory calendar key
+        DefaultPurchasingOrganization:
+          type: string
+          maxLength: 4
+          title: Purch. Organization
+          description: Purchasing Organization
+        SalesOrganization:
+          type: string
+          maxLength: 4
+          title: Sls Organization ICB
+          description: Sales Organization for Intercompany Billing
+        AddressID:
+          type: string
+          maxLength: 10
+          title: Address
+        PlantCategory:
+          type: string
+          maxLength: 1
+          title: Plant Cat.
+          description: Plant category
+        DistributionChannel:
+          type: string
+          maxLength: 2
+          title: Distrib.Channel
+          description: Distribution Channel for Intercompany billing
+        Division:
+          type: string
+          maxLength: 2
+          x-sap-object-node-type-reference: Division
+          title: Interco. Billing Div
+          description: Division for Intercompany Billing
+        Language:
+          type: string
+          maxLength: 2
+          title: Language Key
+        IsMarkedForArchiving:
+          type: boolean
+          title: Archiving Flag
+          description: Central archiving marker for master record
+      required:
+      - Plant
+      title: Plant (for create)
+    com.sap.gateway.srvd_a2x.api_plant_2.v0001.PlantType-update:
+      type: object
+      properties:
+        PlantName:
+          type: string
+          maxLength: 30
+          title: Plant Name
+        ValuationArea:
+          type: string
+          maxLength: 4
+          title: Valuation Area
+        PlantCustomer:
+          type: string
+          maxLength: 10
+          title: Customer No Plant
+          description: Customer Number of Plant
+        PlantSupplier:
+          type: string
+          maxLength: 10
+          title: Sppl. No. Plnt
+          description: Supplier Number of Plant
+        FactoryCalendar:
+          type: string
+          maxLength: 2
+          title: Factory Calendar
+          description: Factory calendar key
+        DefaultPurchasingOrganization:
+          type: string
+          maxLength: 4
+          title: Purch. Organization
+          description: Purchasing Organization
+        SalesOrganization:
+          type: string
+          maxLength: 4
+          title: Sls Organization ICB
+          description: Sales Organization for Intercompany Billing
+        AddressID:
+          type: string
+          maxLength: 10
+          title: Address
+        PlantCategory:
+          type: string
+          maxLength: 1
+          title: Plant Cat.
+          description: Plant category
+        DistributionChannel:
+          type: string
+          maxLength: 2
+          title: Distrib.Channel
+          description: Distribution Channel for Intercompany billing
+        Division:
+          type: string
+          maxLength: 2
+          x-sap-object-node-type-reference: Division
+          title: Interco. Billing Div
+          description: Division for Intercompany Billing
+        Language:
+          type: string
+          maxLength: 2
+          title: Language Key
+        IsMarkedForArchiving:
+          type: boolean
+          title: Archiving Flag
+          description: Central archiving marker for master record
+      title: Plant (for update)
+    count:
+      anyOf:
+      - type: number
+      - type: string
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            target:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                required:
+                - code
+                - message
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  target:
+                    type: string
+            innererror:
+              type: object
+              description: The structure of this object is service-specific
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema:
+        type: integer
+        minimum: 0
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema:
+        type: integer
+        minimum: 0
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema:
+        type: boolean
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema:
+        type: string
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes:
+            OV4:API_PLANT_2: ''
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+- OAuth2Auth:
+  - OV4:API_PLANT_2
+- BasicAuth: []

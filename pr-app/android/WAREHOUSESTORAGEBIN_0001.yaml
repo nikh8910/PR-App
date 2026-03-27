@@ -1,0 +1,794 @@
+openapi: 3.0.0
+info: {title: Warehouse Storage Bin (A2X), version: 1.3.1, description: 'This allows you to retrieve warehouse storage bins, for example, to use as value help or to assist in the process of bin verification by code while processing warehouse orders. You can also create, update, block, and unblock storage bins.'}
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/2e/cef1bb857f44b38bc6f41f1228b3a3/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Retrieve warehouse storage bins with this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Master Data Integration (SAP_COM_0374), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Inbound Processing (3BR)](https://me.sap.com/processnavigator/SolP/3BR " Link To BP ")', format: markdown}
+  - {text: '[Resource Management in Warehousing (3W0)](https://me.sap.com/processnavigator/SolP/3W0 " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WHSE_STORAGE_BIN_2, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Storage Bin, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_whse_storage_bin_2/srvd_a2x/sap/warehousestoragebin/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_whse_storage_bin_2/srvd_a2x/sap/warehousestoragebin/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Warehouse Storage Bin}
+paths:
+  /WarehouseStorageBin:
+    get:
+      summary: Get entities from WarehouseStorageBin
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, EWMStorageBin, EWMStorageBin desc, EWMStorageType, EWMStorageType desc, EWMStorageBinIsEmpty, EWMStorageBinIsEmpty desc, EWMStorageBinIsFull, EWMStorageBinIsFull desc, EWMStorBinVerifiedByMobileID, EWMStorBinVerifiedByMobileID desc, EWMStorBinIsBlockedForRemoval, EWMStorBinIsBlockedForRemoval desc, EWMStorBinIsBlockedForPutaway, EWMStorBinIsBlockedForPutaway desc, EWMStorBinIsBlockedDueToPInv, EWMStorBinIsBlockedDueToPInv desc, EWMStorBinFreeDefinedAisleText, EWMStorBinFreeDefinedAisleText desc, EWMStorBinFreeDefinedStackText, EWMStorBinFreeDefinedStackText desc, EWMStorBinFreeDefinedLevelText, EWMStorBinFreeDefinedLevelText desc, WeightUnit, WeightUnit desc, EWMStorageBinMaximumWeight, EWMStorageBinMaximumWeight desc, EWMStorageBinUsedWeight, EWMStorageBinUsedWeight desc, VolumeUnit, VolumeUnit desc, EWMStorageBinMaximumVolume, EWMStorageBinMaximumVolume desc, EWMStorageBinOccupiedVolume, EWMStorageBinOccupiedVolume desc, EWMStorBinTotalCapacityValue, EWMStorBinTotalCapacityValue desc, EWMStorBinAvailCapacityValue, EWMStorBinAvailCapacityValue desc, EWMStorBinWidthCoordinateValue, EWMStorBinWidthCoordinateValue desc, EWMStorBinLengthCoordinateVal, EWMStorBinLengthCoordinateVal desc, EWMStorBinHeightCoordinateVal, EWMStorBinHeightCoordinateVal desc, EWMPhysicalInventoryType, EWMPhysicalInventoryType desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, PInvCountedUTCDateTime, PInvCountedUTCDateTime desc, EWMStorageBinLastChangedByUser, EWMStorageBinLastChangedByUser desc, EWMStorageBinLastChgDateTime, EWMStorageBinLastChgDateTime desc, EWMStorageBinLastWarehouseTask, EWMStorageBinLastWarehouseTask desc, EWMStorageBinFirstPutawayDate, EWMStorageBinFirstPutawayDate desc, EWMStorageBinLastMvtDateTime, EWMStorageBinLastMvtDateTime desc, EWMStorageBinLastClrgDateTime, EWMStorageBinLastClrgDateTime desc, EWMStorageBinFixedBinType, EWMStorageBinFixedBinType desc, EWMStorageBinAngleValue, EWMStorageBinAngleValue desc, EWMStorBinNumberOfHndlgUnits, EWMStorBinNumberOfHndlgUnits desc, EWMStorBinMaxNmbrOfHndlgUnits, EWMStorBinMaxNmbrOfHndlgUnits desc, EWMStorageSection, EWMStorageSection desc, EWMStorageBinType, EWMStorageBinType desc, EWMStorageBinAccessType, EWMStorageBinAccessType desc, EWMStorageBinSection, EWMStorageBinSection desc, EWMStorageBinPosition, EWMStorageBinPosition desc, EWMStorBinFreeDfndSectionText, EWMStorBinFreeDfndSectionText desc, EWMStorageBinSubdivision, EWMStorageBinSubdivision desc, EWMStorageGroup, EWMStorageGroup desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMStorageBin, EWMStorageType, EWMStorageBinIsEmpty, EWMStorageBinIsFull, EWMStorBinVerifiedByMobileID, EWMStorBinIsBlockedForRemoval, EWMStorBinIsBlockedForPutaway, EWMStorBinIsBlockedDueToPInv, EWMStorBinFreeDefinedAisleText, EWMStorBinFreeDefinedStackText, EWMStorBinFreeDefinedLevelText, WeightUnit, EWMStorageBinMaximumWeight, EWMStorageBinUsedWeight, VolumeUnit, EWMStorageBinMaximumVolume, EWMStorageBinOccupiedVolume, EWMStorBinTotalCapacityValue, EWMStorBinAvailCapacityValue, EWMStorBinWidthCoordinateValue, EWMStorBinLengthCoordinateVal, EWMStorBinHeightCoordinateVal, EWMPhysicalInventoryType, PhysicalInventoryDocNumber, PhysicalInventoryItemNumber, PInvCountedUTCDateTime, EWMStorageBinLastChangedByUser, EWMStorageBinLastChgDateTime, EWMStorageBinLastWarehouseTask, EWMStorageBinFirstPutawayDate, EWMStorageBinLastMvtDateTime, EWMStorageBinLastClrgDateTime, EWMStorageBinFixedBinType, EWMStorageBinAngleValue, EWMStorBinNumberOfHndlgUnits, EWMStorBinMaxNmbrOfHndlgUnits, EWMStorageSection, EWMStorageBinType, EWMStorageBinAccessType, EWMStorageBinSection, EWMStorageBinPosition, EWMStorBinFreeDfndSectionText, EWMStorageBinSubdivision, EWMStorageGroup, SAP__Messages]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseStorageBinType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WarehouseStorageBin
+      tags: [Warehouse Storage Bin]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: EWMStorageBin
+      in: path
+      required: true
+      description: Storage Bin
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get entity from WarehouseStorageBin by key
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMStorageBin, EWMStorageType, EWMStorageBinIsEmpty, EWMStorageBinIsFull, EWMStorBinVerifiedByMobileID, EWMStorBinIsBlockedForRemoval, EWMStorBinIsBlockedForPutaway, EWMStorBinIsBlockedDueToPInv, EWMStorBinFreeDefinedAisleText, EWMStorBinFreeDefinedStackText, EWMStorBinFreeDefinedLevelText, WeightUnit, EWMStorageBinMaximumWeight, EWMStorageBinUsedWeight, VolumeUnit, EWMStorageBinMaximumVolume, EWMStorageBinOccupiedVolume, EWMStorBinTotalCapacityValue, EWMStorBinAvailCapacityValue, EWMStorBinWidthCoordinateValue, EWMStorBinLengthCoordinateVal, EWMStorBinHeightCoordinateVal, EWMPhysicalInventoryType, PhysicalInventoryDocNumber, PhysicalInventoryItemNumber, PInvCountedUTCDateTime, EWMStorageBinLastChangedByUser, EWMStorageBinLastChgDateTime, EWMStorageBinLastWarehouseTask, EWMStorageBinFirstPutawayDate, EWMStorageBinLastMvtDateTime, EWMStorageBinLastClrgDateTime, EWMStorageBinFixedBinType, EWMStorageBinAngleValue, EWMStorBinNumberOfHndlgUnits, EWMStorBinMaxNmbrOfHndlgUnits, EWMStorageSection, EWMStorageBinType, EWMStorageBinAccessType, EWMStorageBinSection, EWMStorageBinPosition, EWMStorBinFreeDfndSectionText, EWMStorageBinSubdivision, EWMStorageGroup, SAP__Messages]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WarehouseStorageBin
+      tags: [Warehouse Storage Bin]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.UnblockStockRemoval:
+    post:
+      summary: Invoke action UnblockStockRemoval
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.UnblockPutaway:
+    post:
+      summary: Invoke action UnblockPutaway
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.BlockStockRemoval:
+    post:
+      summary: Invoke action BlockStockRemoval
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.BlockPutawayAndStockRemoval:
+    post:
+      summary: Invoke action BlockPutawayAndStockRemoval
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.UnblockPutawayAndStockRemoval:
+    post:
+      summary: Invoke action UnblockPutawayAndStockRemoval
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseStorageBin/{EWMWarehouse}/{EWMStorageBin}/SAP__self.BlockPutaway:
+    post:
+      summary: Invoke action BlockPutaway
+      tags: [Warehouse Storage Bin]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMStorageBin
+        in: path
+        required: true
+        description: Storage Bin
+        schema: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WarehouseStorageBin HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        EWMStorageBinIsEmpty: {type: boolean, title: Empty Storage Bin}
+        EWMStorageBinIsFull: {type: boolean, title: Full Indicator, description: Indicator Whether Storage Bin is Full}
+        EWMStorBinVerifiedByMobileID: {type: string, maxLength: 18, title: Verification, description: Verification Field for Mobile Data Entry}
+        EWMStorBinIsBlockedForRemoval: {type: boolean, title: Stock Removal Block, description: 'Block Indicator: For Stock Removals'}
+        EWMStorBinIsBlockedForPutaway: {type: boolean, title: Putaway Block, description: 'Block Indicator: For Putaways'}
+        EWMStorBinIsBlockedDueToPInv: {type: boolean, title: Inventory Active, description: Storage Bin Blocked Because of Physical Inventory}
+        EWMStorBinFreeDefinedAisleText: {type: string, maxLength: 18, title: Storage Bin Aisle}
+        EWMStorBinFreeDefinedStackText: {type: string, maxLength: 18, title: Storage Bin Stack}
+        EWMStorBinFreeDefinedLevelText: {type: string, maxLength: 18, title: Storage Bin Level}
+        WeightUnit: {type: string, maxLength: 3, title: Weight Unit}
+        EWMStorageBinMaximumWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Weight
+          description: Maximum Weight of Storage Bin
+        EWMStorageBinUsedWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Weight Used
+          description: Weight of Materials in Storage Bin
+        VolumeUnit: {type: string, maxLength: 3, title: Volume Unit}
+        EWMStorageBinMaximumVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Volume
+        EWMStorageBinOccupiedVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading or Net Volume
+        EWMStorBinTotalCapacityValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Capacity
+          description: Total Capacity of Storage Bin
+        EWMStorBinAvailCapacityValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Remaining Capacity
+          description: Available Capacity in Storage Bin
+        EWMStorBinWidthCoordinateValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: X Coordinate
+        EWMStorBinLengthCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Y Coordinate
+        EWMStorBinHeightCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Z Coordinate
+        EWMPhysicalInventoryType: {type: string, maxLength: 2, title: PI Type, description: Physical Inventory Type}
+        PhysicalInventoryDocNumber: {type: string, maxLength: 20, x-sap-object-node-type-reference: WarehousePhysicalInventoryDoc, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryItemNumber: {type: string, maxLength: 6, x-sap-object-node-type-reference: WarehousePhysicalInventoryDoc, title: Item}
+        PInvCountedUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Count Date PhysInv, description: Entered Date of Physical Inventory Count (Time Stamp)}
+        EWMStorageBinLastChangedByUser: {type: string, maxLength: 12, title: Last Changed By}
+        EWMStorageBinLastChgDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        EWMStorageBinLastWarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+        EWMStorageBinFirstPutawayDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: First Putaway, description: Date of First Putaway}
+        EWMStorageBinLastMvtDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Last Movement, description: Last Movement to Bin}
+        EWMStorageBinLastClrgDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Last Clearing, description: Last Bin Clearing}
+        EWMStorageBinFixedBinType: {type: string, maxLength: 1, title: Fixed Stor. Bin Type, description: Fixed Storage Bin Type}
+        EWMStorageBinAngleValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 4
+          x-sap-scale: 1
+          multipleOf: 0.1
+          minimum: -999.9
+          maximum: 999.9
+          example: 0
+          title: Bin Angle for Align.
+          description: Angle for Alignment of a Storage Bin (Degrees)
+        EWMStorBinNumberOfHndlgUnits:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 6
+          multipleOf: 1
+          minimum: -999999
+          maximum: 999999
+          example: 0
+          title: No. of HUs
+          description: Number of Handling Units in Storage Bin
+        EWMStorBinMaxNmbrOfHndlgUnits: {type: string, maxLength: 6, title: Maximum No. of HUs, description: Maximum Number of Handling Units in Storage Bin}
+        EWMStorageSection: {type: string, maxLength: 4, title: Storage Section}
+        EWMStorageBinType: {type: string, maxLength: 4, title: Storage Bin Type}
+        EWMStorageBinAccessType: {type: string, maxLength: 4, title: Bin Access Type}
+        EWMStorageBinSection: {type: string, maxLength: 1, title: Storage Bin Section}
+        EWMStorageBinPosition: {type: string, maxLength: 2, title: Bin position, description: Position in Storage Bin}
+        EWMStorBinFreeDfndSectionText: {type: string, maxLength: 18, title: Bin Section, description: Bin Section of a Storage Bin}
+        EWMStorageBinSubdivision: {type: string, maxLength: 1, title: Division, description: Storage Bin is Subdivided}
+        EWMStorageGroup: {type: string, maxLength: 4, title: Storage Group, description: Storage Group for Layout-Oriented Storage Control}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message'}
+      title: Warehouse Storage Bin
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType-create:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        EWMStorBinVerifiedByMobileID: {type: string, maxLength: 18, title: Verification, description: Verification Field for Mobile Data Entry}
+        EWMStorBinFreeDefinedAisleText: {type: string, maxLength: 18, title: Storage Bin Aisle}
+        EWMStorBinFreeDefinedStackText: {type: string, maxLength: 18, title: Storage Bin Stack}
+        EWMStorBinFreeDefinedLevelText: {type: string, maxLength: 18, title: Storage Bin Level}
+        EWMStorageBinMaximumWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Weight
+          description: Maximum Weight of Storage Bin
+        EWMStorageBinMaximumVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Volume
+        EWMStorBinTotalCapacityValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Capacity
+          description: Total Capacity of Storage Bin
+        EWMStorBinWidthCoordinateValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: X Coordinate
+        EWMStorBinLengthCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Y Coordinate
+        EWMStorBinHeightCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Z Coordinate
+        EWMStorageBinAngleValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 4
+          x-sap-scale: 1
+          multipleOf: 0.1
+          minimum: -999.9
+          maximum: 999.9
+          example: 0
+          title: Bin Angle for Align.
+          description: Angle for Alignment of a Storage Bin (Degrees)
+        EWMStorageSection: {type: string, maxLength: 4, title: Storage Section}
+        EWMStorageBinType: {type: string, maxLength: 4, title: Storage Bin Type}
+        EWMStorageBinAccessType: {type: string, maxLength: 4, title: Bin Access Type}
+        EWMStorageBinSection: {type: string, maxLength: 1, title: Storage Bin Section}
+        EWMStorBinFreeDfndSectionText: {type: string, maxLength: 18, title: Bin Section, description: Bin Section of a Storage Bin}
+        EWMStorageGroup: {type: string, maxLength: 4, title: Storage Group, description: Storage Group for Layout-Oriented Storage Control}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message-create'}
+      required: [EWMWarehouse, EWMStorageBin]
+      title: Warehouse Storage Bin (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.WarehouseStorageBinType-update:
+      type: object
+      properties:
+        EWMStorBinVerifiedByMobileID: {type: string, maxLength: 18, title: Verification, description: Verification Field for Mobile Data Entry}
+        EWMStorBinFreeDefinedAisleText: {type: string, maxLength: 18, title: Storage Bin Aisle}
+        EWMStorBinFreeDefinedStackText: {type: string, maxLength: 18, title: Storage Bin Stack}
+        EWMStorBinFreeDefinedLevelText: {type: string, maxLength: 18, title: Storage Bin Level}
+        EWMStorageBinMaximumWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Weight
+          description: Maximum Weight of Storage Bin
+        EWMStorageBinMaximumVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Maximum Volume
+        EWMStorBinTotalCapacityValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Total Capacity
+          description: Total Capacity of Storage Bin
+        EWMStorBinWidthCoordinateValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: X Coordinate
+        EWMStorBinLengthCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Y Coordinate
+        EWMStorBinHeightCoordinateVal:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9999999.999
+          maximum: 9999999.999
+          example: 0
+          title: Z Coordinate
+        EWMStorageBinAngleValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 4
+          x-sap-scale: 1
+          multipleOf: 0.1
+          minimum: -999.9
+          maximum: 999.9
+          example: 0
+          title: Bin Angle for Align.
+          description: Angle for Alignment of a Storage Bin (Degrees)
+        EWMStorageSection: {type: string, maxLength: 4, title: Storage Section}
+        EWMStorageBinType: {type: string, maxLength: 4, title: Storage Bin Type}
+        EWMStorageBinAccessType: {type: string, maxLength: 4, title: Bin Access Type}
+        EWMStorageBinSection: {type: string, maxLength: 1, title: Storage Bin Section}
+        EWMStorBinFreeDfndSectionText: {type: string, maxLength: 18, title: Bin Section, description: Bin Section of a Storage Bin}
+        EWMStorageGroup: {type: string, maxLength: 4, title: Storage Group, description: Storage Group for Layout-Oriented Storage Control}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message-update'}
+      title: Warehouse Storage Bin (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_storage_bin_2.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WHSE_STORAGE_BIN_2': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WHSE_STORAGE_BIN_2']
+- BasicAuth: []

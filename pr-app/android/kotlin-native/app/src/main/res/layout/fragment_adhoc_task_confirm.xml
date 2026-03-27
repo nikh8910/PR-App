@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8FAFC">
+
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="72dp" android:background="#1E293B" android:elevation="4dp" app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_revert" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView android:id="@+id/text_header_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Confirm Adhoc Task" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" android:layout_marginStart="16dp" />
+
+        <ImageView android:id="@+id/btn_home" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_compass" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Section 1: Search -->
+    <LinearLayout android:id="@+id/layout_search" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" app:layout_constraintTop_toBottomOf="@id/header_layout">
+
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="2dp" app:strokeColor="#E2E8F0" app:strokeWidth="1dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:background="#FFFFFF">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WAREHOUSE *" android:textSize="10sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/spinner_warehouse" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/spinner_background" android:layout_marginBottom="16dp"/>
+
+                <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Warehouse Task ID (Optional)" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:endIconMode="custom" app:endIconDrawable="@drawable/ic_scan">
+
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_search_value" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button android:id="@+id/btn_search" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:text="SEARCH TASKS" android:textStyle="bold" android:backgroundTint="#0ea5e9" app:cornerRadius="8dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <TextView android:id="@+id/text_list_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OPEN TASKS" android:textSize="12sp" android:textStyle="bold" android:textColor="#64748B" android:paddingStart="20dp" android:paddingTop="8dp" android:paddingBottom="4dp" android:visibility="gone" app:layout_constraintTop_toBottomOf="@id/layout_search" />
+
+    <!-- Section 2: List -->
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_tasks" android:layout_width="match_parent" android:layout_height="0dp" android:clipToPadding="false" android:padding="8dp" android:visibility="gone" app:layout_constraintTop_toBottomOf="@id/text_list_header" app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Section 3: Detail -->
+    <ScrollView android:id="@+id/layout_detail" android:layout_width="match_parent" android:layout_height="0dp" android:visibility="gone" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toTopOf="@id/layout_confirm_btn">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="2dp" app:strokeColor="#E2E8F0" app:strokeWidth="1dp">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:background="#FFFFFF">
+
+                    <!-- Task ID & Status -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="16dp">
+
+                        <TextView android:id="@+id/text_task_id" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Task: " android:textSize="16sp" android:textStyle="bold" android:textColor="#0F172A"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="OPEN" android:textColor="#D97706" android:background="#FEF3C7" android:paddingHorizontal="8dp" android:paddingVertical="4dp" android:textSize="12sp" android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PRODUCT" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                    <TextView android:id="@+id/text_product" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Loading..." android:textSize="16sp" android:textColor="#1E293B" android:layout_marginBottom="12dp" android:textStyle="bold"/>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="QUANTITY" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                            <TextView android:id="@+id/text_quantity" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-" android:textSize="16sp" android:textColor="#1E293B" android:textStyle="bold"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="HANDLING UNIT" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                            <TextView android:id="@+id/text_hu" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-" android:textSize="14sp" android:textColor="#1E293B"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E2E8F0" android:layout_marginVertical="12dp" />
+
+                    <!-- Bins -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SOURCE BIN" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                            <TextView android:id="@+id/text_src_bin" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-" android:textSize="16sp" android:textColor="#EF4444" android:textStyle="bold" />
+                        </LinearLayout>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_media_play" app:tint="#CBD5E1" android:rotation="0" android:layout_marginHorizontal="8dp" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="end">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEST BIN" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                            <TextView android:id="@+id/text_dst_bin" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-" android:textSize="16sp" android:textColor="#10B981" android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E2E8F0" android:layout_marginVertical="12dp" />
+
+                    <!-- Process -->
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PROCESS TYPE" android:textSize="10sp" android:textStyle="bold" android:textColor="#94A3B8" />
+                    <TextView android:id="@+id/text_process_type" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-" android:textSize="14sp" android:textColor="#475569" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Detail Confirm Button -->
+    <FrameLayout android:id="@+id/layout_confirm_btn" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:background="#FFFFFF" android:elevation="8dp" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button android:id="@+id/btn_confirm" android:layout_width="match_parent" android:layout_height="56dp" android:text="CONFIRM TASK EXACTLY" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#10B981" app:cornerRadius="12dp" />
+    </FrameLayout>
+
+    <!-- UI Overlays -->
+    <TextView android:id="@+id/text_error" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#FEE2E2" android:textColor="#B91C1C" android:padding="12dp" android:textSize="12sp" android:visibility="gone" android:elevation="6dp" app:layout_constraintTop_toBottomOf="@id/header_layout" />
+
+    <TextView android:id="@+id/text_success" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#D1FAE5" android:textColor="#047857" android:padding="12dp" android:textSize="12sp" android:visibility="gone" android:elevation="6dp" app:layout_constraintTop_toBottomOf="@id/header_layout" />
+
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" android:elevation="10dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

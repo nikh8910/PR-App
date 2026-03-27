@@ -1,0 +1,1412 @@
+openapi: 3.0.0
+info:
+  title: Warehouse Physical Inventory (A2X)
+  version: 1.2.0
+  description: "In every API call, you can make use of the following operations:\r\n - Retrieve physical inventory (PI) items.\r\n - Count PI items.\r\n - Change counted PI items.\r\n - Mark PI items as ***Deleted***.\r\n - Create physical inventory documents.\r\n\r\nYou can integrate this API with external applications.\r\n\r\nFor the counting PI items and changing counted PI items operations, you can only perform these operations using batch requests. Additionally, you must include the entities ***Warehouse Physical Inventory Item ***(<TT>WhsePhysicalInventoryItem</TT>) and ***Warehouse Physical Inventory Count Item*** (<TT>WhsePhysicalInventoryCountItem</TT>) in the batch requests."
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/80/66af3fff9a448da84262d427edb30b/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Count physical inventory using this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Physical Inventory Integration (SAP_COM_0378), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Physical Inventory (3BX)](https://me.sap.com/processnavigator/SolP/3BX " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WHSE_PHYSINVTRYITEM_2, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Physical Inventory Document, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_whse_physinvtryitem_2/srvd_a2x/sap/whsephysicalinventorydoc/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_whse_physinvtryitem_2/srvd_a2x/sap/whsephysicalinventorydoc/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Warehouse Physical Inventory Count Item}
+- {name: Warehouse Physical Inventory Item}
+- {name: Physical Inventory Serial Number}
+paths:
+  /WhsePhysicalInventoryCountItem:
+    get:
+      summary: Get entities from WhsePhysicalInventoryCountItem
+      tags: [Warehouse Physical Inventory Count Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryDocYear, PhysicalInventoryDocYear desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, LineIndexOfPInvItem, LineIndexOfPInvItem desc, PInvQuantitySequence, PInvQuantitySequence desc, PhysicalInventoryItemLevel, PhysicalInventoryItemLevel desc, PInvItemParentType, PInvItemParentType desc, EWMStorageBin, EWMStorageBin desc, EWMStorageType, EWMStorageType desc, ParentHandlingUnitNumber, ParentHandlingUnitNumber desc, PhysicalInventoryItemType, PhysicalInventoryItemType desc, HandlingUnitNumber, HandlingUnitNumber desc, Product, Product desc, ProductUUID, ProductUUID desc, BatchUUID, BatchUUID desc, Batch, Batch desc, SerialNumberRequiredLevel, SerialNumberRequiredLevel desc, EWMStockType, EWMStockType desc, EWMStockOwner, EWMStockOwner desc, StockOwnerPartnerRole, StockOwnerPartnerRole desc, EWMStockUsage, EWMStockUsage desc, EntitledToDisposeParty, EntitledToDisposeParty desc, EntitledToDisposePartnerRole, EntitledToDisposePartnerRole desc, StockDocumentCategory, StockDocumentCategory desc, StockDocumentNumber, StockDocumentNumber desc, StockItemNumber, StockItemNumber desc, WBSElementExternalID, WBSElementExternalID desc, WBSElementInternalID, WBSElementInternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, DocumentReltdStockDocCat, DocumentReltdStockDocCat desc, WhseQualityInspectionType, WhseQualityInspectionType desc, QualityInspectionDocUUID, QualityInspectionDocUUID desc, StockIdentificationNumber, StockIdentificationNumber desc, DocumentReltdStockDocUUID, DocumentReltdStockDocUUID desc, DocumentReltdStockDocItemUUID, DocumentReltdStockDocItemUUID desc, WhseTaskGoodsReceiptDateTime, WhseTaskGoodsReceiptDateTime desc, ShelfLifeExpirationDate, ShelfLifeExpirationDate desc, CountryOfOrigin, CountryOfOrigin desc, MatlBatchIsInRstrcdUseStock, MatlBatchIsInRstrcdUseStock desc, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsComplete desc, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsEmpty desc, HndlgUnitItemCountedIsNotExist, HndlgUnitItemCountedIsNotExist desc, PackagingMaterial, PackagingMaterial desc, HandlingUnitType, HandlingUnitType desc, EWMStorageBinIsEmpty, EWMStorageBinIsEmpty desc, PInvIsZeroCount, PInvIsZeroCount desc, RequestedQuantityUnit, RequestedQuantityUnit desc, RequestedQuantity, RequestedQuantity desc, PInvItemChgUTCDateTime, PInvItemChgUTCDateTime desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, PhysicalInventoryItemLevel, PInvItemParentType, EWMStorageBin, EWMStorageType, ParentHandlingUnitNumber, PhysicalInventoryItemType, HandlingUnitNumber, Product, ProductUUID, BatchUUID, Batch, SerialNumberRequiredLevel, EWMStockType, EWMStockOwner, StockOwnerPartnerRole, EWMStockUsage, EntitledToDisposeParty, EntitledToDisposePartnerRole, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, DocumentReltdStockDocCat, WhseQualityInspectionType, QualityInspectionDocUUID, StockIdentificationNumber, DocumentReltdStockDocUUID, DocumentReltdStockDocItemUUID, WhseTaskGoodsReceiptDateTime, ShelfLifeExpirationDate, CountryOfOrigin, MatlBatchIsInRstrcdUseStock, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsNotExist, PackagingMaterial, HandlingUnitType, EWMStorageBinIsEmpty, PInvIsZeroCount, RequestedQuantityUnit, RequestedQuantity, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryItem, _WhsePhysicalInventorySrlNmbr]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhsePhysicalInventoryCountItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WhsePhysicalInventoryCountItem
+      tags: [Warehouse Physical Inventory Count Item]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryCountItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get entity from WhsePhysicalInventoryCountItem by key
+      tags: [Warehouse Physical Inventory Count Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, PhysicalInventoryItemLevel, PInvItemParentType, EWMStorageBin, EWMStorageType, ParentHandlingUnitNumber, PhysicalInventoryItemType, HandlingUnitNumber, Product, ProductUUID, BatchUUID, Batch, SerialNumberRequiredLevel, EWMStockType, EWMStockOwner, StockOwnerPartnerRole, EWMStockUsage, EntitledToDisposeParty, EntitledToDisposePartnerRole, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, DocumentReltdStockDocCat, WhseQualityInspectionType, QualityInspectionDocUUID, StockIdentificationNumber, DocumentReltdStockDocUUID, DocumentReltdStockDocItemUUID, WhseTaskGoodsReceiptDateTime, ShelfLifeExpirationDate, CountryOfOrigin, MatlBatchIsInRstrcdUseStock, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsNotExist, PackagingMaterial, HandlingUnitType, EWMStorageBinIsEmpty, PInvIsZeroCount, RequestedQuantityUnit, RequestedQuantity, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryItem, _WhsePhysicalInventorySrlNmbr]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WhsePhysicalInventoryCountItem
+      tags: [Warehouse Physical Inventory Count Item]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryCountItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}/_WhsePhysicalInventoryItem
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get related _WhsePhysicalInventoryItem
+      tags: [Warehouse Physical Inventory Count Item, Warehouse Physical Inventory Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, PhysicalInventoryDocumentUUID, PhysicalInventoryDocumentType, EWMPhysInvtryDifferenceReason, EWMPhysInvtryReason, EWMPhysicalInventoryPriority, PhysicalInventoryStatusText, PhysInventoryCrtnUTCDateTime, PInvCountedUTCDateTime, PhysicalInventoryCountUserName, WarehouseOrder, PInvDocumentItemIsPrinted, PhysicalInventoryIsBlock, PInvBookQuantityIsFreeze, EWMStorageType, EWMStorageBin, PhysicalInventoryArea, ActivityArea, ProductUUID, Product, BatchUUID, Batch, EWMStockType, EWMStockUsage, EWMStockOwner, StockOwnerName, EntitledToDisposeParty, NameOfEntitledToDisposeParty, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PhysicalInventoryRefDocYear, EWMRefPhysicalInventoryDoc, PhysicalInventoryRefDocItem, PInvFreeDefinedRefText, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryCountItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}/_WhsePhysicalInventorySrlNmbr
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get entities from related _WhsePhysicalInventorySrlNmbr
+      tags: [Warehouse Physical Inventory Count Item, Physical Inventory Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryDocYear, PhysicalInventoryDocYear desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, LineIndexOfPInvItem, LineIndexOfPInvItem desc, PInvQuantitySequence, PInvQuantitySequence desc, EWMPhysInvtrySrlNmbrSqnc, EWMPhysInvtrySrlNmbrSqnc desc, EWMSerialNumber, EWMSerialNumber desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, EWMPhysInvtrySrlNmbrSqnc, EWMSerialNumber, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem, _WhsePhysicalInventoryItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhsePhysicalInventorySrlNmbrType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhsePhysicalInventoryItem:
+    get:
+      summary: Get entities from WhsePhysicalInventoryItem
+      tags: [Warehouse Physical Inventory Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryDocYear, PhysicalInventoryDocYear desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, PhysicalInventoryDocumentUUID, PhysicalInventoryDocumentUUID desc, PhysicalInventoryDocumentType, PhysicalInventoryDocumentType desc, EWMPhysInvtryDifferenceReason, EWMPhysInvtryDifferenceReason desc, EWMPhysInvtryReason, EWMPhysInvtryReason desc, EWMPhysicalInventoryPriority, EWMPhysicalInventoryPriority desc, PhysicalInventoryStatusText, PhysicalInventoryStatusText desc, PhysInventoryCrtnUTCDateTime, PhysInventoryCrtnUTCDateTime desc, PInvCountedUTCDateTime, PInvCountedUTCDateTime desc, PhysicalInventoryCountUserName, PhysicalInventoryCountUserName desc, WarehouseOrder, WarehouseOrder desc, PInvDocumentItemIsPrinted, PInvDocumentItemIsPrinted desc, PhysicalInventoryIsBlock, PhysicalInventoryIsBlock desc, PInvBookQuantityIsFreeze, PInvBookQuantityIsFreeze desc, EWMStorageType, EWMStorageType desc, EWMStorageBin, EWMStorageBin desc, PhysicalInventoryArea, PhysicalInventoryArea desc, ActivityArea, ActivityArea desc, ProductUUID, ProductUUID desc, Product, Product desc, BatchUUID, BatchUUID desc, Batch, Batch desc, EWMStockType, EWMStockType desc, EWMStockUsage, EWMStockUsage desc, EWMStockOwner, EWMStockOwner desc, StockOwnerName, StockOwnerName desc, EntitledToDisposeParty, EntitledToDisposeParty desc, NameOfEntitledToDisposeParty, NameOfEntitledToDisposeParty desc, StockDocumentCategory, StockDocumentCategory desc, StockDocumentNumber, StockDocumentNumber desc, StockItemNumber, StockItemNumber desc, WBSElementExternalID, WBSElementExternalID desc, WBSElementInternalID, WBSElementInternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, PhysicalInventoryRefDocYear, PhysicalInventoryRefDocYear desc, EWMRefPhysicalInventoryDoc, EWMRefPhysicalInventoryDoc desc, PhysicalInventoryRefDocItem, PhysicalInventoryRefDocItem desc, PInvFreeDefinedRefText, PInvFreeDefinedRefText desc, PInvItemChgUTCDateTime, PInvItemChgUTCDateTime desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, PhysicalInventoryDocumentUUID, PhysicalInventoryDocumentType, EWMPhysInvtryDifferenceReason, EWMPhysInvtryReason, EWMPhysicalInventoryPriority, PhysicalInventoryStatusText, PhysInventoryCrtnUTCDateTime, PInvCountedUTCDateTime, PhysicalInventoryCountUserName, WarehouseOrder, PInvDocumentItemIsPrinted, PhysicalInventoryIsBlock, PInvBookQuantityIsFreeze, EWMStorageType, EWMStorageBin, PhysicalInventoryArea, ActivityArea, ProductUUID, Product, BatchUUID, Batch, EWMStockType, EWMStockUsage, EWMStockOwner, StockOwnerName, EntitledToDisposeParty, NameOfEntitledToDisposeParty, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PhysicalInventoryRefDocYear, EWMRefPhysicalInventoryDoc, PhysicalInventoryRefDocItem, PInvFreeDefinedRefText, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhsePhysicalInventoryItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WhsePhysicalInventoryItem
+      tags: [Warehouse Physical Inventory Item]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    get:
+      summary: Get entity from WhsePhysicalInventoryItem by key
+      tags: [Warehouse Physical Inventory Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, PhysicalInventoryDocumentUUID, PhysicalInventoryDocumentType, EWMPhysInvtryDifferenceReason, EWMPhysInvtryReason, EWMPhysicalInventoryPriority, PhysicalInventoryStatusText, PhysInventoryCrtnUTCDateTime, PInvCountedUTCDateTime, PhysicalInventoryCountUserName, WarehouseOrder, PInvDocumentItemIsPrinted, PhysicalInventoryIsBlock, PInvBookQuantityIsFreeze, EWMStorageType, EWMStorageBin, PhysicalInventoryArea, ActivityArea, ProductUUID, Product, BatchUUID, Batch, EWMStockType, EWMStockUsage, EWMStockOwner, StockOwnerName, EntitledToDisposeParty, NameOfEntitledToDisposeParty, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PhysicalInventoryRefDocYear, EWMRefPhysicalInventoryDoc, PhysicalInventoryRefDocItem, PInvFreeDefinedRefText, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WhsePhysicalInventoryItem
+      tags: [Warehouse Physical Inventory Item]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/SAP__self.DeletePhysicalInventoryItem
+  : post:
+      summary: Invoke action DeletePhysicalInventoryItem
+      tags: [Warehouse Physical Inventory Item]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: PhysicalInventoryDocNumber
+        in: path
+        required: true
+        description: Physical Inventory Document Number
+        schema: {type: string, maxLength: 20}
+      - name: PhysicalInventoryDocYear
+        in: path
+        required: true
+        description: Document Year of Physical Inventory Document
+        schema: {type: string, maxLength: 4}
+      - name: PhysicalInventoryItemNumber
+        in: path
+        required: true
+        description: Item
+        schema: {type: string, maxLength: 6}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventoryItem/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/_WhsePhysicalInventoryCntItem
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    get:
+      summary: Get entities from related _WhsePhysicalInventoryCntItem
+      tags: [Warehouse Physical Inventory Item, Warehouse Physical Inventory Count Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryDocYear, PhysicalInventoryDocYear desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, LineIndexOfPInvItem, LineIndexOfPInvItem desc, PInvQuantitySequence, PInvQuantitySequence desc, PhysicalInventoryItemLevel, PhysicalInventoryItemLevel desc, PInvItemParentType, PInvItemParentType desc, EWMStorageBin, EWMStorageBin desc, EWMStorageType, EWMStorageType desc, ParentHandlingUnitNumber, ParentHandlingUnitNumber desc, PhysicalInventoryItemType, PhysicalInventoryItemType desc, HandlingUnitNumber, HandlingUnitNumber desc, Product, Product desc, ProductUUID, ProductUUID desc, BatchUUID, BatchUUID desc, Batch, Batch desc, SerialNumberRequiredLevel, SerialNumberRequiredLevel desc, EWMStockType, EWMStockType desc, EWMStockOwner, EWMStockOwner desc, StockOwnerPartnerRole, StockOwnerPartnerRole desc, EWMStockUsage, EWMStockUsage desc, EntitledToDisposeParty, EntitledToDisposeParty desc, EntitledToDisposePartnerRole, EntitledToDisposePartnerRole desc, StockDocumentCategory, StockDocumentCategory desc, StockDocumentNumber, StockDocumentNumber desc, StockItemNumber, StockItemNumber desc, WBSElementExternalID, WBSElementExternalID desc, WBSElementInternalID, WBSElementInternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, DocumentReltdStockDocCat, DocumentReltdStockDocCat desc, WhseQualityInspectionType, WhseQualityInspectionType desc, QualityInspectionDocUUID, QualityInspectionDocUUID desc, StockIdentificationNumber, StockIdentificationNumber desc, DocumentReltdStockDocUUID, DocumentReltdStockDocUUID desc, DocumentReltdStockDocItemUUID, DocumentReltdStockDocItemUUID desc, WhseTaskGoodsReceiptDateTime, WhseTaskGoodsReceiptDateTime desc, ShelfLifeExpirationDate, ShelfLifeExpirationDate desc, CountryOfOrigin, CountryOfOrigin desc, MatlBatchIsInRstrcdUseStock, MatlBatchIsInRstrcdUseStock desc, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsComplete desc, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsEmpty desc, HndlgUnitItemCountedIsNotExist, HndlgUnitItemCountedIsNotExist desc, PackagingMaterial, PackagingMaterial desc, HandlingUnitType, HandlingUnitType desc, EWMStorageBinIsEmpty, EWMStorageBinIsEmpty desc, PInvIsZeroCount, PInvIsZeroCount desc, RequestedQuantityUnit, RequestedQuantityUnit desc, RequestedQuantity, RequestedQuantity desc, PInvItemChgUTCDateTime, PInvItemChgUTCDateTime desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, PhysicalInventoryItemLevel, PInvItemParentType, EWMStorageBin, EWMStorageType, ParentHandlingUnitNumber, PhysicalInventoryItemType, HandlingUnitNumber, Product, ProductUUID, BatchUUID, Batch, SerialNumberRequiredLevel, EWMStockType, EWMStockOwner, StockOwnerPartnerRole, EWMStockUsage, EntitledToDisposeParty, EntitledToDisposePartnerRole, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, DocumentReltdStockDocCat, WhseQualityInspectionType, QualityInspectionDocUUID, StockIdentificationNumber, DocumentReltdStockDocUUID, DocumentReltdStockDocItemUUID, WhseTaskGoodsReceiptDateTime, ShelfLifeExpirationDate, CountryOfOrigin, MatlBatchIsInRstrcdUseStock, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsNotExist, PackagingMaterial, HandlingUnitType, EWMStorageBinIsEmpty, PInvIsZeroCount, RequestedQuantityUnit, RequestedQuantity, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryItem, _WhsePhysicalInventorySrlNmbr]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhsePhysicalInventoryCountItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhsePhysicalInventorySrlNmbr:
+    get:
+      summary: Get entities from WhsePhysicalInventorySrlNmbr
+      tags: [Physical Inventory Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, PhysicalInventoryDocNumber, PhysicalInventoryDocNumber desc, PhysicalInventoryDocYear, PhysicalInventoryDocYear desc, PhysicalInventoryItemNumber, PhysicalInventoryItemNumber desc, LineIndexOfPInvItem, LineIndexOfPInvItem desc, PInvQuantitySequence, PInvQuantitySequence desc, EWMPhysInvtrySrlNmbrSqnc, EWMPhysInvtrySrlNmbrSqnc desc, EWMSerialNumber, EWMSerialNumber desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, EWMPhysInvtrySrlNmbrSqnc, EWMSerialNumber, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem, _WhsePhysicalInventoryItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhsePhysicalInventorySrlNmbrType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WhsePhysicalInventorySrlNmbr
+      tags: [Physical Inventory Serial Number]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventorySrlNmbr/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}/{EWMPhysInvtrySrlNmbrSqnc}
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: EWMPhysInvtrySrlNmbrSqnc
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get entity from WhsePhysicalInventorySrlNmbr by key
+      tags: [Physical Inventory Serial Number]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, EWMPhysInvtrySrlNmbrSqnc, EWMSerialNumber, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem, _WhsePhysicalInventoryItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventorySrlNmbr/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}/{EWMPhysInvtrySrlNmbrSqnc}/_WhsePhysicalInventoryCntItem
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: EWMPhysInvtrySrlNmbrSqnc
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get related _WhsePhysicalInventoryCntItem
+      tags: [Physical Inventory Serial Number, Warehouse Physical Inventory Count Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, LineIndexOfPInvItem, PInvQuantitySequence, PhysicalInventoryItemLevel, PInvItemParentType, EWMStorageBin, EWMStorageType, ParentHandlingUnitNumber, PhysicalInventoryItemType, HandlingUnitNumber, Product, ProductUUID, BatchUUID, Batch, SerialNumberRequiredLevel, EWMStockType, EWMStockOwner, StockOwnerPartnerRole, EWMStockUsage, EntitledToDisposeParty, EntitledToDisposePartnerRole, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, DocumentReltdStockDocCat, WhseQualityInspectionType, QualityInspectionDocUUID, StockIdentificationNumber, DocumentReltdStockDocUUID, DocumentReltdStockDocItemUUID, WhseTaskGoodsReceiptDateTime, ShelfLifeExpirationDate, CountryOfOrigin, MatlBatchIsInRstrcdUseStock, HndlgUnitItemCountedIsComplete, HndlgUnitItemCountedIsEmpty, HndlgUnitItemCountedIsNotExist, PackagingMaterial, HandlingUnitType, EWMStorageBinIsEmpty, PInvIsZeroCount, RequestedQuantityUnit, RequestedQuantity, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryItem, _WhsePhysicalInventorySrlNmbr]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WhsePhysicalInventorySrlNmbr/{EWMWarehouse}/{PhysicalInventoryDocNumber}/{PhysicalInventoryDocYear}/{PhysicalInventoryItemNumber}/{LineIndexOfPInvItem}/{PInvQuantitySequence}/{EWMPhysInvtrySrlNmbrSqnc}/_WhsePhysicalInventoryItem
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: PhysicalInventoryDocNumber
+      in: path
+      required: true
+      description: Physical Inventory Document Number
+      schema: {type: string, maxLength: 20}
+    - name: PhysicalInventoryDocYear
+      in: path
+      required: true
+      description: Document Year of Physical Inventory Document
+      schema: {type: string, maxLength: 4}
+    - name: PhysicalInventoryItemNumber
+      in: path
+      required: true
+      description: Item
+      schema: {type: string, maxLength: 6}
+    - name: LineIndexOfPInvItem
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: PInvQuantitySequence
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    - name: EWMPhysInvtrySrlNmbrSqnc
+      in: path
+      required: true
+      description: Row Index of Internal Tables
+      schema: {type: integer, format: int32}
+    get:
+      summary: Get related _WhsePhysicalInventoryItem
+      tags: [Physical Inventory Serial Number, Warehouse Physical Inventory Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber, PhysicalInventoryDocumentUUID, PhysicalInventoryDocumentType, EWMPhysInvtryDifferenceReason, EWMPhysInvtryReason, EWMPhysicalInventoryPriority, PhysicalInventoryStatusText, PhysInventoryCrtnUTCDateTime, PInvCountedUTCDateTime, PhysicalInventoryCountUserName, WarehouseOrder, PInvDocumentItemIsPrinted, PhysicalInventoryIsBlock, PInvBookQuantityIsFreeze, EWMStorageType, EWMStorageBin, PhysicalInventoryArea, ActivityArea, ProductUUID, Product, BatchUUID, Batch, EWMStockType, EWMStockUsage, EWMStockOwner, StockOwnerName, EntitledToDisposeParty, NameOfEntitledToDisposeParty, StockDocumentCategory, StockDocumentNumber, StockItemNumber, WBSElementExternalID, WBSElementInternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PhysicalInventoryRefDocYear, EWMRefPhysicalInventoryDoc, PhysicalInventoryRefDocItem, PInvFreeDefinedRefText, PInvItemChgUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhsePhysicalInventoryCntItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WhsePhysicalInventoryCountItem HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType:
+      type: object
+      x-sap-object-node-type: WarehousePhysicalInventoryDoc
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PhysicalInventoryDocNumber: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        PhysicalInventoryItemNumber: {type: string, maxLength: 6, title: Item}
+        PhysicalInventoryDocumentUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID, description: GUID for Physical Inventory Document}
+        PhysicalInventoryDocumentType: {type: string, maxLength: 2, title: Phys. Inv. Procedure, description: Physical Inventory Procedure (Document Type of Phys. Inv.)}
+        EWMPhysInvtryDifferenceReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysInvtryReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysicalInventoryPriority: {type: string, maxLength: 1, x-sap-object-node-type-reference: WhsePhysicalInventoryPriority, title: Phys. Inv. Prior., description: Priority of Physical Inventory}
+        PhysicalInventoryStatusText: {type: string, maxLength: 4, title: PI Status, description: Physical Inventory Status}
+        PhysInventoryCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Date, description: Creation Date of Physical Inventory Doc. Item (Time Stamp)}
+        PInvCountedUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Count Date PhysInv, description: Entered Date of Physical Inventory Count (Time Stamp)}
+        PhysicalInventoryCountUserName: {type: string, maxLength: 12, title: User Name}
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+        PInvDocumentItemIsPrinted: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PhysicalInventoryIsBlock: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvBookQuantityIsFreeze: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        PhysicalInventoryArea: {type: string, maxLength: 20, title: Phys. Inv. Area, description: Physical Inventory Area}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        Product: {type: string, maxLength: 40, title: Product}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerName: {type: string, maxLength: 81}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        NameOfEntitledToDisposeParty: {type: string, maxLength: 81}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        PhysicalInventoryRefDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        EWMRefPhysicalInventoryDoc: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryRefDocItem: {type: string, maxLength: 6, title: Item}
+        PInvFreeDefinedRefText: {type: string, maxLength: 70, title: Document ID, description: Document ID of Reference Document}
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message'}
+        _WhsePhysicalInventoryCntItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+      title: Warehouse Physical Inventory Item
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-create:
+      type: object
+      x-sap-object-node-type: WarehousePhysicalInventoryDoc
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PhysicalInventoryDocNumber: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        PhysicalInventoryItemNumber: {type: string, maxLength: 6, title: Item}
+        PhysicalInventoryDocumentUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID, description: GUID for Physical Inventory Document}
+        PhysicalInventoryDocumentType: {type: string, maxLength: 2, title: Phys. Inv. Procedure, description: Physical Inventory Procedure (Document Type of Phys. Inv.)}
+        EWMPhysInvtryDifferenceReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysInvtryReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysicalInventoryPriority: {type: string, maxLength: 1, x-sap-object-node-type-reference: WhsePhysicalInventoryPriority, title: Phys. Inv. Prior., description: Priority of Physical Inventory}
+        PhysicalInventoryStatusText: {type: string, maxLength: 4, title: PI Status, description: Physical Inventory Status}
+        PhysInventoryCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Date, description: Creation Date of Physical Inventory Doc. Item (Time Stamp)}
+        PInvCountedUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Count Date PhysInv, description: Entered Date of Physical Inventory Count (Time Stamp)}
+        PhysicalInventoryCountUserName: {type: string, maxLength: 12, title: User Name}
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+        PInvDocumentItemIsPrinted: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PhysicalInventoryIsBlock: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvBookQuantityIsFreeze: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        PhysicalInventoryArea: {type: string, maxLength: 20, title: Phys. Inv. Area, description: Physical Inventory Area}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        Product: {type: string, maxLength: 40, title: Product}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerName: {type: string, maxLength: 81}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        NameOfEntitledToDisposeParty: {type: string, maxLength: 81}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        PhysicalInventoryRefDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        EWMRefPhysicalInventoryDoc: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryRefDocItem: {type: string, maxLength: 6, title: Item}
+        PInvFreeDefinedRefText: {type: string, maxLength: 70, title: Document ID, description: Document ID of Reference Document}
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-create'}
+        _WhsePhysicalInventoryCntItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-create'}
+      required: [EWMWarehouse, PhysicalInventoryDocNumber, PhysicalInventoryDocYear, PhysicalInventoryItemNumber]
+      title: Warehouse Physical Inventory Item (for create)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-update:
+      type: object
+      x-sap-object-node-type: WarehousePhysicalInventoryDoc
+      properties:
+        PhysicalInventoryDocumentUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: GUID, description: GUID for Physical Inventory Document}
+        PhysicalInventoryDocumentType: {type: string, maxLength: 2, title: Phys. Inv. Procedure, description: Physical Inventory Procedure (Document Type of Phys. Inv.)}
+        EWMPhysInvtryDifferenceReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysInvtryReason: {type: string, maxLength: 4, title: Reason f. Phys. Inv., description: Reason for Physical Inventory/Inventory Difference}
+        EWMPhysicalInventoryPriority: {type: string, maxLength: 1, x-sap-object-node-type-reference: WhsePhysicalInventoryPriority, title: Phys. Inv. Prior., description: Priority of Physical Inventory}
+        PhysicalInventoryStatusText: {type: string, maxLength: 4, title: PI Status, description: Physical Inventory Status}
+        PhysInventoryCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Date, description: Creation Date of Physical Inventory Doc. Item (Time Stamp)}
+        PInvCountedUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Count Date PhysInv, description: Entered Date of Physical Inventory Count (Time Stamp)}
+        PhysicalInventoryCountUserName: {type: string, maxLength: 12, title: User Name}
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+        PInvDocumentItemIsPrinted: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PhysicalInventoryIsBlock: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvBookQuantityIsFreeze: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin}
+        PhysicalInventoryArea: {type: string, maxLength: 20, title: Phys. Inv. Area, description: Physical Inventory Area}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        Product: {type: string, maxLength: 40, title: Product}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerName: {type: string, maxLength: 81}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        NameOfEntitledToDisposeParty: {type: string, maxLength: 81}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        PhysicalInventoryRefDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        EWMRefPhysicalInventoryDoc: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryRefDocItem: {type: string, maxLength: 6, title: Item}
+        PInvFreeDefinedRefText: {type: string, maxLength: 70, title: Document ID, description: Document ID of Reference Document}
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-update'}
+      title: Warehouse Physical Inventory Item (for update)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType:
+      type: object
+      x-sap-object-node-type: WhsePhysInventorySerialNumber
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PhysicalInventoryDocNumber: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        PhysicalInventoryItemNumber: {type: string, maxLength: 6, title: Item}
+        LineIndexOfPInvItem: {type: integer, format: int32, title: Table Row, description: Row Index of Internal Tables}
+        PInvQuantitySequence: {type: integer, format: int32, title: Table Row, description: Row Index of Internal Tables}
+        EWMPhysInvtrySrlNmbrSqnc: {type: integer, format: int32, title: Table Row, description: Row Index of Internal Tables}
+        EWMSerialNumber: {type: string, maxLength: 30, title: Serial Number}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message'}
+        _WhsePhysicalInventoryCntItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType'}
+        _WhsePhysicalInventoryItem:
+          nullable: true
+          allOf:
+          - {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+      title: Physical Inventory Serial Number
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType-create:
+      type: object
+      x-sap-object-node-type: WhsePhysInventorySerialNumber
+      properties:
+        EWMSerialNumber: {type: string, maxLength: 30, title: Serial Number}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-create'}
+        _WhsePhysicalInventoryCntItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-create'}
+        _WhsePhysicalInventoryItem:
+          nullable: true
+          allOf:
+          - {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-create'}
+      title: Physical Inventory Serial Number (for create)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType-update:
+      type: object
+      x-sap-object-node-type: WhsePhysInventorySerialNumber
+      properties:
+        EWMSerialNumber: {type: string, maxLength: 30, title: Serial Number}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-update'}
+      title: Physical Inventory Serial Number (for update)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType:
+      type: object
+      x-sap-object-node-type: WhsePhysicalInventoryCountItem
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        PhysicalInventoryDocNumber: {type: string, maxLength: 20, title: PI Document Number, description: Physical Inventory Document Number}
+        PhysicalInventoryDocYear: {type: string, maxLength: 4, title: Document Year, description: Document Year of Physical Inventory Document}
+        PhysicalInventoryItemNumber: {type: string, maxLength: 6, title: Item}
+        LineIndexOfPInvItem: {type: integer, format: int32, title: Table Row, description: Row Index of Internal Tables}
+        PInvQuantitySequence: {type: integer, format: int32, title: Table Row, description: Row Index of Internal Tables}
+        PhysicalInventoryItemLevel: {type: integer, format: int32, title: Level in Tree, description: Level in Tree Hierarchy Observed from Leaf}
+        PInvItemParentType: {type: string, maxLength: 1, title: Parent Item Type, description: Parent Item Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin, description: Storage Bin}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Parent Handling Unit, description: Parent Handling Unit}
+        PhysicalInventoryItemType: {type: string, maxLength: 1, title: Cat. of Item Object, description: Object Category of Physical Inventory (Item Object)}
+        HandlingUnitNumber: {type: string, maxLength: 20, title: Source Handling Unit}
+        Product: {type: string, maxLength: 40, title: Product}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10, title: Batch Number, description: Batch Number}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerPartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Owner}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        EntitledToDisposePartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Party Entitled to Dispose}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        DocumentReltdStockDocCat: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Inspection Object, description: Identification of a Quality Object}
+        StockIdentificationNumber: {type: string, maxLength: 20, title: Stock ID, description: Identification Number of Stock}
+        DocumentReltdStockDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document ID, description: Doc. Identification for Document-Related Stocks}
+        DocumentReltdStockDocItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document Item, description: Document Item for Document-Related Stocks}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Country or Region of Origin, description: Country or Region of Origin}
+        MatlBatchIsInRstrcdUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        HndlgUnitItemCountedIsComplete: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsNotExist: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        HandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        EWMStorageBinIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvIsZeroCount: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        RequestedQuantityUnit: {type: string, maxLength: 3, title: Inv.-Managed UoM, description: Inventory-Managed Unit of Measure}
+        RequestedQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity Entered
+          description: Quantity Entered in Physical Inventory
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message'}
+        _WhsePhysicalInventoryItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType'}
+        _WhsePhysicalInventorySrlNmbr:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType'}
+      title: Warehouse Physical Inventory Count Item
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-create:
+      type: object
+      x-sap-object-node-type: WhsePhysicalInventoryCountItem
+      properties:
+        PhysicalInventoryItemLevel: {type: integer, format: int32, title: Level in Tree, description: Level in Tree Hierarchy Observed from Leaf}
+        PInvItemParentType: {type: string, maxLength: 1, title: Parent Item Type, description: Parent Item Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin, description: Storage Bin}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Parent Handling Unit, description: Parent Handling Unit}
+        PhysicalInventoryItemType: {type: string, maxLength: 1, title: Cat. of Item Object, description: Object Category of Physical Inventory (Item Object)}
+        HandlingUnitNumber: {type: string, maxLength: 20, title: Source Handling Unit}
+        Product: {type: string, maxLength: 40, title: Product}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10, title: Batch Number, description: Batch Number}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerPartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Owner}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        EntitledToDisposePartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Party Entitled to Dispose}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        DocumentReltdStockDocCat: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Inspection Object, description: Identification of a Quality Object}
+        StockIdentificationNumber: {type: string, maxLength: 20, title: Stock ID, description: Identification Number of Stock}
+        DocumentReltdStockDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document ID, description: Doc. Identification for Document-Related Stocks}
+        DocumentReltdStockDocItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document Item, description: Document Item for Document-Related Stocks}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Country or Region of Origin, description: Country or Region of Origin}
+        MatlBatchIsInRstrcdUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        HndlgUnitItemCountedIsComplete: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsNotExist: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        HandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        EWMStorageBinIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvIsZeroCount: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        RequestedQuantityUnit: {type: string, maxLength: 3, title: Inv.-Managed UoM, description: Inventory-Managed Unit of Measure}
+        RequestedQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity Entered
+          description: Quantity Entered in Physical Inventory
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-create'}
+        _WhsePhysicalInventoryItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryItemType-create'}
+        _WhsePhysicalInventorySrlNmbr:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventorySrlNmbrType-create'}
+      title: Warehouse Physical Inventory Count Item (for create)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.WhsePhysicalInventoryCountItemType-update:
+      type: object
+      x-sap-object-node-type: WhsePhysicalInventoryCountItem
+      properties:
+        PhysicalInventoryItemLevel: {type: integer, format: int32, title: Level in Tree, description: Level in Tree Hierarchy Observed from Leaf}
+        PInvItemParentType: {type: string, maxLength: 1, title: Parent Item Type, description: Parent Item Type}
+        EWMStorageBin: {type: string, maxLength: 18, title: Storage Bin, description: Storage Bin}
+        EWMStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Storage Type}
+        ParentHandlingUnitNumber: {type: string, maxLength: 20, title: Parent Handling Unit, description: Parent Handling Unit}
+        PhysicalInventoryItemType: {type: string, maxLength: 1, title: Cat. of Item Object, description: Object Category of Physical Inventory (Item Object)}
+        HandlingUnitNumber: {type: string, maxLength: 20, title: Source Handling Unit}
+        Product: {type: string, maxLength: 40, title: Product}
+        ProductUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Product, description: Product UUID}
+        BatchUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Batch}
+        Batch: {type: string, maxLength: 10, title: Batch Number, description: Batch Number}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        EWMStockType: {type: string, maxLength: 2, x-sap-object-node-type-reference: WarehouseStockType, title: Stock Type}
+        EWMStockOwner: {type: string, maxLength: 10, title: Owner}
+        StockOwnerPartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Owner}
+        EWMStockUsage: {type: string, maxLength: 1, x-sap-object-node-type-reference: WarehouseStockUsage, title: Usage, description: Stock Usage}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        EntitledToDisposePartnerRole: {type: string, maxLength: 2, title: Partner Role, description: Partner Role of Party Entitled to Dispose}
+        StockDocumentCategory: {type: string, maxLength: 3, title: Type, description: Special Reference Stock Type}
+        StockDocumentNumber: {type: string, maxLength: 35, title: Stock Reference Doc., description: Reference Document for Special Reference Stock}
+        StockItemNumber: {type: string, maxLength: 10, title: Sales Order Item, description: Sales Order Item for Sales Order Stock}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: NUMC06, description: numc06}
+        DocumentReltdStockDocCat: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        WhseQualityInspectionType: {type: string, maxLength: 1, title: Inspection ID Type}
+        QualityInspectionDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Inspection Object, description: Identification of a Quality Object}
+        StockIdentificationNumber: {type: string, maxLength: 20, title: Stock ID, description: Identification Number of Stock}
+        DocumentReltdStockDocUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document ID, description: Doc. Identification for Document-Related Stocks}
+        DocumentReltdStockDocItemUUID: {type: string, nullable: true, format: uuid, example: 01234567-89ab-cdef-0123-456789abcdef, title: Document Item, description: Document Item for Document-Related Stocks}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Country or Region of Origin, description: Country or Region of Origin}
+        MatlBatchIsInRstrcdUseStock: {type: boolean, title: Batch in restr.-use, description: Batch in Restricted-Use Stock}
+        HndlgUnitItemCountedIsComplete: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        HndlgUnitItemCountedIsNotExist: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PackagingMaterial: {type: string, maxLength: 40, title: Packaging Material}
+        HandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        EWMStorageBinIsEmpty: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        PInvIsZeroCount: {type: boolean, title: 'TRUE', description: 'Data element for domain BOOLE: TRUE (=''X'') and FALSE (='' '')'}
+        RequestedQuantityUnit: {type: string, maxLength: 3, title: Inv.-Managed UoM, description: Inventory-Managed Unit of Measure}
+        RequestedQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity Entered
+          description: Quantity Entered in Physical Inventory
+        PInvItemChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: End Time Stamp, description: 'LIME Internal Time Stamp (YYYYMMDDhhmmss,mmmuuun)'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-update'}
+      title: Warehouse Physical Inventory Count Item (for update)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_whse_physinvtryitem_2.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WHSE_PHYSINVTRYITEM_2': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WHSE_PHYSINVTRYITEM_2']
+- BasicAuth: []

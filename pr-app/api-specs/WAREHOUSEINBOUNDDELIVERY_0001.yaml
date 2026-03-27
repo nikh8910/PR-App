@@ -1,0 +1,925 @@
+openapi: 3.0.0
+info:
+  title: Warehouse Inbound Delivery - Read, Update (A2X)
+  version: 1.3.4
+  description: "In every API call, you can make use of the following operations:\r\n - You can retrieve header information for warehouse inbound deliveries.\r\n - You can retrieve item information for warehouse inbound deliveries, including serial numbers.\r\n - You can change the carrier ID for a warehouse inbound delivery at header level.\r\n - You can change the product quantity and the goods movement bin for a warehouse inbound delivery at item level.\r\n - You can adjust the delivery item quantity down to 0 if the item was not received, or down to the packed quantity that was received.\r\n - You can post goods receipt.\r\n - You can reverse goods receipt."
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/05/aa44504bba4368a1f6b6a4bbab525c/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Integrate external applications with warehouse inbound deliveries with this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Inbound Delivery Integration (SAP_COM_0385), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Inbound Processing (3BR)](https://me.sap.com/processnavigator/SolP/3BR " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WHSE_INB_DELIVERY_2, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Inbound Delivery, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_whse_inb_delivery_2/srvd_a2x/sap/warehouseinbounddelivery/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_whse_inb_delivery_2/srvd_a2x/sap/warehouseinbounddelivery/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Whse Inb Delivery Item Serial Number}
+- {name: Warehouse Inbound Delivery Head}
+- {name: Warehouse Inbound Delivery Item}
+paths:
+  /WhseInbDelivItemSerialNumber:
+    get:
+      summary: Get entities from WhseInbDelivItemSerialNumber
+      tags: [Whse Inb Delivery Item Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDelivery desc, EWMInboundDeliveryItem, EWMInboundDeliveryItem desc, EWMSerialNumber, EWMSerialNumber desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseInbDelivItemSerialNumberType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInbDelivItemSerialNumber/{EWMInboundDelivery}/{EWMInboundDeliveryItem}/{EWMSerialNumber}:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    - name: EWMInboundDeliveryItem
+      in: path
+      required: true
+      description: Item Number
+      schema: {type: string, maxLength: 10}
+    - name: EWMSerialNumber
+      in: path
+      required: true
+      description: Serial Number
+      schema: {type: string, maxLength: 30}
+    get:
+      summary: Get entity from WhseInbDelivItemSerialNumber by key
+      tags: [Whse Inb Delivery Item Serial Number]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInbDelivItemSerialNumber/{EWMInboundDelivery}/{EWMInboundDeliveryItem}/{EWMSerialNumber}/_WhseInbDeliveryItem:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    - name: EWMInboundDeliveryItem
+      in: path
+      required: true
+      description: Item Number
+      schema: {type: string, maxLength: 10}
+    - name: EWMSerialNumber
+      in: path
+      required: true
+      description: Serial Number
+      schema: {type: string, maxLength: 30}
+    get:
+      summary: Get related _WhseInbDeliveryItem
+      tags: [Whse Inb Delivery Item Serial Number, Warehouse Inbound Delivery Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMWarehouse, EWMDeliveryDocumentCategory, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemType, Product, ProductExternalID, Batch, EWMBatchBySupplierPlanned, CountryOfOrigin, ProductQuantity, QuantityUnit, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantityISOCode, StagingAreaGroup, StagingArea, StagingBay, GoodsReceiptStatus, PlanningPutawayStatus, PutawayStatus, CompletionStatus, WarehouseProcessType, GoodsMovementBin, EWMProductionSupplyArea, EWMDelivLastChangeUTCDateTime, EntitledToDisposeParty, EWMStockUsage, EWMStockType, EWMStockOwner, DeliveryItemStockTypeDetnCode, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PurchasingDocument, PurchasingDocumentItem, ManufacturingOrder, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryHead, _WhseInbDeliveryItemSerialNo]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryHead:
+    get:
+      summary: Get entities from WhseInboundDeliveryHead
+      tags: [Warehouse Inbound Delivery Head]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDelivery desc, EWMWarehouse, EWMWarehouse desc, EWMDeliveryDocumentCategory, EWMDeliveryDocumentCategory desc, EWMDeliveryDocumentType, EWMDeliveryDocumentType desc, ShipFromParty, ShipFromParty desc, ShipFromPartyName, ShipFromPartyName desc, Carrier, Carrier desc, CarrierName, CarrierName desc, AdvancedShippingNotification, AdvancedShippingNotification desc, PlannedDeliveryUTCDateTime, PlannedDeliveryUTCDateTime desc, ReceivingOffice, ReceivingOffice desc, EWMDelivLastChangeUTCDateTime, EWMDelivLastChangeUTCDateTime desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMWarehouse, EWMDeliveryDocumentCategory, EWMDeliveryDocumentType, ShipFromParty, ShipFromPartyName, Carrier, CarrierName, AdvancedShippingNotification, PlannedDeliveryUTCDateTime, ReceivingOffice, EWMDelivLastChangeUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseInboundDeliveryHeadType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryHead/{EWMInboundDelivery}:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    get:
+      summary: Get entity from WhseInboundDeliveryHead by key
+      tags: [Warehouse Inbound Delivery Head]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMWarehouse, EWMDeliveryDocumentCategory, EWMDeliveryDocumentType, ShipFromParty, ShipFromPartyName, Carrier, CarrierName, AdvancedShippingNotification, PlannedDeliveryUTCDateTime, ReceivingOffice, EWMDelivLastChangeUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WhseInboundDeliveryHead
+      tags: [Warehouse Inbound Delivery Head]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryHead/{EWMInboundDelivery}/SAP__self.PostGoodsReceipt:
+    post:
+      summary: Invoke action PostGoodsReceipt
+      tags: [Warehouse Inbound Delivery Head]
+      parameters:
+      - name: EWMInboundDelivery
+        in: path
+        required: true
+        description: Document Number
+        schema: {type: string, maxLength: 35}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryHead/{EWMInboundDelivery}/SAP__self.ReverseGoodsReceipt:
+    post:
+      summary: Invoke action ReverseGoodsReceipt
+      tags: [Warehouse Inbound Delivery Head]
+      parameters:
+      - name: EWMInboundDelivery
+        in: path
+        required: true
+        description: Document Number
+        schema: {type: string, maxLength: 35}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryHead/{EWMInboundDelivery}/_WhseInbDeliveryItem:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    get:
+      summary: Get entities from related _WhseInbDeliveryItem
+      tags: [Warehouse Inbound Delivery Head, Warehouse Inbound Delivery Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDelivery desc, EWMInboundDeliveryItem, EWMInboundDeliveryItem desc, EWMWarehouse, EWMWarehouse desc, EWMDeliveryDocumentCategory, EWMDeliveryDocumentCategory desc, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemCategory desc, EWMInboundDeliveryItemType, EWMInboundDeliveryItemType desc, Product, Product desc, ProductExternalID, ProductExternalID desc, Batch, Batch desc, EWMBatchBySupplierPlanned, EWMBatchBySupplierPlanned desc, CountryOfOrigin, CountryOfOrigin desc, ProductQuantity, ProductQuantity desc, QuantityUnit, QuantityUnit desc, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantitySAPCode desc, EWMInbDelivItmQuantityISOCode, EWMInbDelivItmQuantityISOCode desc, StagingAreaGroup, StagingAreaGroup desc, StagingArea, StagingArea desc, StagingBay, StagingBay desc, GoodsReceiptStatus, GoodsReceiptStatus desc, PlanningPutawayStatus, PlanningPutawayStatus desc, PutawayStatus, PutawayStatus desc, CompletionStatus, CompletionStatus desc, WarehouseProcessType, WarehouseProcessType desc, GoodsMovementBin, GoodsMovementBin desc, EWMProductionSupplyArea, EWMProductionSupplyArea desc, EWMDelivLastChangeUTCDateTime, EWMDelivLastChangeUTCDateTime desc, EntitledToDisposeParty, EntitledToDisposeParty desc, EWMStockUsage, EWMStockUsage desc, EWMStockType, EWMStockType desc, EWMStockOwner, EWMStockOwner desc, DeliveryItemStockTypeDetnCode, DeliveryItemStockTypeDetnCode desc, WBSElementInternalID, WBSElementInternalID desc, WBSElementExternalID, WBSElementExternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, PurchasingDocument, PurchasingDocument desc, PurchasingDocumentItem, PurchasingDocumentItem desc, ManufacturingOrder, ManufacturingOrder desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMWarehouse, EWMDeliveryDocumentCategory, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemType, Product, ProductExternalID, Batch, EWMBatchBySupplierPlanned, CountryOfOrigin, ProductQuantity, QuantityUnit, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantityISOCode, StagingAreaGroup, StagingArea, StagingBay, GoodsReceiptStatus, PlanningPutawayStatus, PutawayStatus, CompletionStatus, WarehouseProcessType, GoodsMovementBin, EWMProductionSupplyArea, EWMDelivLastChangeUTCDateTime, EntitledToDisposeParty, EWMStockUsage, EWMStockType, EWMStockOwner, DeliveryItemStockTypeDetnCode, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PurchasingDocument, PurchasingDocumentItem, ManufacturingOrder, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryHead, _WhseInbDeliveryItemSerialNo]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseInboundDeliveryItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryItem:
+    get:
+      summary: Get entities from WhseInboundDeliveryItem
+      tags: [Warehouse Inbound Delivery Item]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDelivery desc, EWMInboundDeliveryItem, EWMInboundDeliveryItem desc, EWMWarehouse, EWMWarehouse desc, EWMDeliveryDocumentCategory, EWMDeliveryDocumentCategory desc, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemCategory desc, EWMInboundDeliveryItemType, EWMInboundDeliveryItemType desc, Product, Product desc, ProductExternalID, ProductExternalID desc, Batch, Batch desc, EWMBatchBySupplierPlanned, EWMBatchBySupplierPlanned desc, CountryOfOrigin, CountryOfOrigin desc, ProductQuantity, ProductQuantity desc, QuantityUnit, QuantityUnit desc, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantitySAPCode desc, EWMInbDelivItmQuantityISOCode, EWMInbDelivItmQuantityISOCode desc, StagingAreaGroup, StagingAreaGroup desc, StagingArea, StagingArea desc, StagingBay, StagingBay desc, GoodsReceiptStatus, GoodsReceiptStatus desc, PlanningPutawayStatus, PlanningPutawayStatus desc, PutawayStatus, PutawayStatus desc, CompletionStatus, CompletionStatus desc, WarehouseProcessType, WarehouseProcessType desc, GoodsMovementBin, GoodsMovementBin desc, EWMProductionSupplyArea, EWMProductionSupplyArea desc, EWMDelivLastChangeUTCDateTime, EWMDelivLastChangeUTCDateTime desc, EntitledToDisposeParty, EntitledToDisposeParty desc, EWMStockUsage, EWMStockUsage desc, EWMStockType, EWMStockType desc, EWMStockOwner, EWMStockOwner desc, DeliveryItemStockTypeDetnCode, DeliveryItemStockTypeDetnCode desc, WBSElementInternalID, WBSElementInternalID desc, WBSElementExternalID, WBSElementExternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, PurchasingDocument, PurchasingDocument desc, PurchasingDocumentItem, PurchasingDocumentItem desc, ManufacturingOrder, ManufacturingOrder desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMWarehouse, EWMDeliveryDocumentCategory, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemType, Product, ProductExternalID, Batch, EWMBatchBySupplierPlanned, CountryOfOrigin, ProductQuantity, QuantityUnit, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantityISOCode, StagingAreaGroup, StagingArea, StagingBay, GoodsReceiptStatus, PlanningPutawayStatus, PutawayStatus, CompletionStatus, WarehouseProcessType, GoodsMovementBin, EWMProductionSupplyArea, EWMDelivLastChangeUTCDateTime, EntitledToDisposeParty, EWMStockUsage, EWMStockType, EWMStockOwner, DeliveryItemStockTypeDetnCode, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PurchasingDocument, PurchasingDocumentItem, ManufacturingOrder, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryHead, _WhseInbDeliveryItemSerialNo]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseInboundDeliveryItemType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryItem/{EWMInboundDelivery}/{EWMInboundDeliveryItem}:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    - name: EWMInboundDeliveryItem
+      in: path
+      required: true
+      description: Item Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get entity from WhseInboundDeliveryItem by key
+      tags: [Warehouse Inbound Delivery Item]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMWarehouse, EWMDeliveryDocumentCategory, EWMInboundDeliveryItemCategory, EWMInboundDeliveryItemType, Product, ProductExternalID, Batch, EWMBatchBySupplierPlanned, CountryOfOrigin, ProductQuantity, QuantityUnit, EWMInbDelivItmQuantitySAPCode, EWMInbDelivItmQuantityISOCode, StagingAreaGroup, StagingArea, StagingBay, GoodsReceiptStatus, PlanningPutawayStatus, PutawayStatus, CompletionStatus, WarehouseProcessType, GoodsMovementBin, EWMProductionSupplyArea, EWMDelivLastChangeUTCDateTime, EntitledToDisposeParty, EWMStockUsage, EWMStockType, EWMStockOwner, DeliveryItemStockTypeDetnCode, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, PurchasingDocument, PurchasingDocumentItem, ManufacturingOrder, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryHead, _WhseInbDeliveryItemSerialNo]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WhseInboundDeliveryItem
+      tags: [Warehouse Inbound Delivery Item]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryItem/{EWMInboundDelivery}/{EWMInboundDeliveryItem}/SAP__self.AdjustDeliveryItemQuantity:
+    post:
+      summary: Invoke action AdjustDeliveryItemQuantity
+      tags: [Warehouse Inbound Delivery Item]
+      parameters:
+      - name: EWMInboundDelivery
+        in: path
+        required: true
+        description: Document Number
+        schema: {type: string, maxLength: 35}
+      - name: EWMInboundDeliveryItem
+        in: path
+        required: true
+        description: Item Number
+        schema: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryItem/{EWMInboundDelivery}/{EWMInboundDeliveryItem}/_WhseInbDeliveryHead:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    - name: EWMInboundDeliveryItem
+      in: path
+      required: true
+      description: Item Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get related _WhseInbDeliveryHead
+      tags: [Warehouse Inbound Delivery Item, Warehouse Inbound Delivery Head]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMWarehouse, EWMDeliveryDocumentCategory, EWMDeliveryDocumentType, ShipFromParty, ShipFromPartyName, Carrier, CarrierName, AdvancedShippingNotification, PlannedDeliveryUTCDateTime, ReceivingOffice, EWMDelivLastChangeUTCDateTime, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseInboundDeliveryItem/{EWMInboundDelivery}/{EWMInboundDeliveryItem}/_WhseInbDeliveryItemSerialNo:
+    parameters:
+    - name: EWMInboundDelivery
+      in: path
+      required: true
+      description: Document Number
+      schema: {type: string, maxLength: 35}
+    - name: EWMInboundDeliveryItem
+      in: path
+      required: true
+      description: Item Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get entities from related _WhseInbDeliveryItemSerialNo
+      tags: [Warehouse Inbound Delivery Item, Whse Inb Delivery Item Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDelivery desc, EWMInboundDeliveryItem, EWMInboundDeliveryItem desc, EWMSerialNumber, EWMSerialNumber desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMInboundDelivery, EWMInboundDeliveryItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseInbDeliveryItem]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseInbDelivItemSerialNumberType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WhseInbDelivItemSerialNumber HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType:
+      type: object
+      properties:
+        EWMInboundDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMInboundDeliveryItem: {type: string, maxLength: 10, title: Item Number}
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMDeliveryDocumentCategory: {type: string, maxLength: 3, title: Document Category}
+        EWMInboundDeliveryItemCategory: {type: string, maxLength: 3, title: Item Category}
+        EWMInboundDeliveryItemType: {type: string, maxLength: 4, title: Item Type}
+        Product: {type: string, maxLength: 40, title: Char, description: Character field of length 40}
+        ProductExternalID: {type: string, maxLength: 40, title: Char, description: Character field of length 40}
+        Batch: {type: string, maxLength: 10, title: Batch, description: Batch Number}
+        EWMBatchBySupplierPlanned: {type: string, maxLength: 15, title: Supplier Batch, description: Supplier Batch Number}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        ProductQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity
+        QuantityUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMInbDelivItmQuantitySAPCode: {type: string, maxLength: 3, title: Internal SAP Code, description: 'Unit of Measurement, Internal SAP Code (No Conversion)'}
+        EWMInbDelivItmQuantityISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        StagingAreaGroup: {type: string, maxLength: 4, title: Staging Area Group}
+        StagingArea: {type: string, maxLength: 4, title: Staging Area}
+        StagingBay: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Staging Bay}
+        GoodsReceiptStatus: {type: string, maxLength: 1, title: Status Value}
+        PlanningPutawayStatus: {type: string, maxLength: 1, title: Status Value}
+        PutawayStatus: {type: string, maxLength: 1, title: Status Value}
+        CompletionStatus: {type: string, maxLength: 1, title: Status Value}
+        WarehouseProcessType: {type: string, maxLength: 4, title: Whse Process Type, description: Warehouse Process Type}
+        GoodsMovementBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Stor. Bin GM Posting, description: Storage Bin of Goods Movement Posting}
+        EWMProductionSupplyArea: {type: string, maxLength: 15, title: PSA, description: Production Supply Area (PSA)}
+        EWMDelivLastChangeUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        EWMStockUsage: {type: string, maxLength: 1, title: Stock Usage}
+        EWMStockType: {type: string, maxLength: 2, title: Stock Type}
+        EWMStockOwner: {type: string, maxLength: 10, title: Character Field with Length 10}
+        DeliveryItemStockTypeDetnCode: {type: string, maxLength: 1, title: Determin. Ind., description: Value Determination Indicator}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10, title: Stock Ident Header, description: Special Stock Identification Header}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6, title: Stock Ident Item, description: Special Stock Identification Item}
+        PurchasingDocument: {type: string, maxLength: 10, title: Purchasing Document}
+        PurchasingDocumentItem: {type: string, maxLength: 5, title: Purchase Order Item}
+        ManufacturingOrder: {type: string, maxLength: 12, title: Manufacturing Order, description: Manufacturing Order ID}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message'}
+        _WhseInbDeliveryHead: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType'}
+        _WhseInbDeliveryItemSerialNo:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType'}
+      title: Warehouse Inbound Delivery Item
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType-create:
+      type: object
+      properties:
+        ProductQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity
+        QuantityUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        GoodsMovementBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Stor. Bin GM Posting, description: Storage Bin of Goods Movement Posting}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-create'}
+        _WhseInbDeliveryHead: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType-create'}
+        _WhseInbDeliveryItemSerialNo:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType-create'}
+      title: Warehouse Inbound Delivery Item (for create)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType-update:
+      type: object
+      properties:
+        ProductQuantity:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Quantity
+        QuantityUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        GoodsMovementBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Stor. Bin GM Posting, description: Storage Bin of Goods Movement Posting}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-update'}
+      title: Warehouse Inbound Delivery Item (for update)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType:
+      type: object
+      properties:
+        EWMInboundDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMInboundDeliveryItem: {type: string, maxLength: 10, title: Item Number}
+        EWMSerialNumber: {type: string, maxLength: 30, title: Serial Number}
+        _WhseInbDeliveryItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+      title: Whse Inb Delivery Item Serial Number
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType-create:
+      type: object
+      properties:
+        _WhseInbDeliveryItem: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType-create'}
+      title: Whse Inb Delivery Item Serial Number (for create)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInbDelivItemSerialNumberType-update: {type: object, title: Whse Inb Delivery Item Serial Number (for update)}
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType:
+      type: object
+      properties:
+        EWMInboundDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMDeliveryDocumentCategory: {type: string, maxLength: 3, title: Document Category}
+        EWMDeliveryDocumentType: {type: string, maxLength: 4, title: Document Type}
+        ShipFromParty: {type: string, maxLength: 10, x-sap-object-node-type-reference: BusinessPartner, title: Business Partner, description: Business Partner Number}
+        ShipFromPartyName: {type: string, maxLength: 40, title: Ship-From Party Name}
+        Carrier: {type: string, maxLength: 10, title: Business Partner, description: Business Partner Number}
+        CarrierName: {type: string, maxLength: 40, title: Carrier Name}
+        AdvancedShippingNotification: {type: string, maxLength: 35, title: Document Number}
+        PlannedDeliveryUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Planned Delivery Date, description: Planned Delivery Date/Time}
+        ReceivingOffice: {type: string, maxLength: 20, title: Location Number}
+        EWMDelivLastChangeUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message'}
+        _WhseInbDeliveryItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType'}
+      title: Warehouse Inbound Delivery Head
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType-create:
+      type: object
+      properties:
+        Carrier: {type: string, maxLength: 10, title: Business Partner, description: Business Partner Number}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-create'}
+        _WhseInbDeliveryItem:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryItemType-create'}
+      title: Warehouse Inbound Delivery Head (for create)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.WhseInboundDeliveryHeadType-update:
+      type: object
+      properties:
+        Carrier: {type: string, maxLength: 10, title: Business Partner, description: Business Partner Number}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-update'}
+      title: Warehouse Inbound Delivery Head (for update)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_whse_inbound_delivery_2.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WHSE_INB_DELIVERY_2': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WHSE_INB_DELIVERY_2']
+- BasicAuth: []

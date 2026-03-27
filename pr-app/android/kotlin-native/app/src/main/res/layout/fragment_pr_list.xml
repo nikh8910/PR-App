@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/slate_50">
+
+    <!-- Header Section (similar to Goods Receipt/Inbound Delivery) -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_header_curved" android:paddingTop="48dp" android:paddingBottom="24dp" android:paddingHorizontal="24dp" android:elevation="8dp">
+
+        <!-- Top Navigation Bar -->
+        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+
+            <ImageButton android:id="@+id/btn_back" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="start|center_vertical" android:background="@drawable/bg_icon_button" android:src="@android:drawable/ic_media_previous" app:tint="@color/white" android:contentDescription="Back" />
+
+            <ImageButton android:id="@+id/btn_home" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="end|center_vertical" android:background="@drawable/bg_icon_button" android:src="@android:drawable/ic_menu_directions" app:tint="@color/white" android:contentDescription="Home" />
+        </FrameLayout>
+
+        <!-- Screen Title block -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/tv_pr_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/white" android:textSize="28sp" android:textStyle="bold" />
+                <TextView android:id="@+id/tv_pr_total" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="/0" android:textColor="#BFDBFE" android:textSize="18sp" android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PURCHASE REQUISITIONS" android:textColor="#BFDBFE" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- Search Bar -->
+        <EditText android:id="@+id/et_search_document" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="24dp" android:background="@drawable/edit_text_bg" android:hint="Enter Document Number" android:textColorHint="@color/slate_400" android:textColor="@color/slate_700" android:textAlignment="center" android:textSize="16sp" android:singleLine="true" android:imeOptions="actionSearch" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="16dp" android:paddingVertical="12dp" android:gravity="center_vertical">
+
+        <Button android:id="@+id/btn_create_new" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="Create New" android:textSize="14sp" android:textAllCaps="false" android:textStyle="bold" android:background="@drawable/bg_button_primary" app:backgroundTint="@color/brand_light_blue" android:textColor="@color/white" android:layout_marginEnd="8dp"/>
+
+        <Button android:id="@+id/btn_search" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="Search" android:textSize="14sp" android:textAllCaps="false" android:textStyle="bold" android:background="@drawable/bg_button_primary" app:backgroundTint="@color/brand_light_blue" android:textColor="@color/white" android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:layout_marginTop="32dp" android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rv_purchase_requisitions" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingHorizontal="16dp" android:paddingTop="8dp" android:paddingBottom="80dp" />
+
+</LinearLayout>

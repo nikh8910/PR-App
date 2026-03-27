@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:id="@+id/nav_graph" app:startDestination="@id/dashboardFragment">
+
+    <fragment android:id="@+id/dashboardFragment" android:name="com.prapp.warehouse.ui.dashboard.DashboardFragment" android:label="Dashboard" tools:layout="@layout/fragment_dashboard">
+        <action android:id="@+id/action_dashboard_to_goodsReceipt" app:destination="@id/goodsReceiptFragment" />
+        <action android:id="@+id/action_dashboard_to_inboundDelivery" app:destination="@id/inboundDeliveryFragment" />
+        <action android:id="@+id/action_dashboard_to_goodsIssue" app:destination="@id/goodsIssueFragment" />
+        <action android:id="@+id/action_dashboard_to_physicalInventory" app:destination="@id/physicalInventoryFragment" />
+        <action android:id="@+id/action_dashboard_to_stockOverview" app:destination="@id/stockOverviewFragment" />
+        <action android:id="@+id/action_dashboard_to_moveStock" app:destination="@id/internalMvmtMenuFragment" />
+        <action android:id="@+id/action_dashboard_to_handlingUnits" app:destination="@id/packingMenuFragment" />
+        <action android:id="@+id/action_dashboard_to_inboundTasks" app:destination="@id/inboundTaskFragment" />
+        <action android:id="@+id/action_dashboard_to_prList" app:destination="@id/prListFragment" />
+        <action android:id="@+id/action_dashboard_to_obdSearch" app:destination="@id/obdSearchFragment" />
+        <action android:id="@+id/action_dashboard_to_pickingSearch" app:destination="@id/pickingSearchFragment" />
+        <action android:id="@+id/action_dashboard_to_stockByBin" app:destination="@id/stockByBinFragment" />
+        <action android:id="@+id/action_dashboard_to_stockByProduct" app:destination="@id/stockByProductFragment" />
+        <action android:id="@+id/action_dashboard_to_giReservation" app:destination="@id/giReservationFragment" />
+        <action android:id="@+id/action_dashboard_to_giSTO" app:destination="@id/giSTOFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/goodsReceiptFragment" android:name="com.prapp.warehouse.ui.goodsreceipt.GoodsReceiptFragment" android:label="Goods Receipt" tools:layout="@layout/fragment_goods_receipt">
+        <action android:id="@+id/action_goodsReceipt_to_detail" app:destination="@id/goodsReceiptDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/goodsReceiptDetailFragment" android:name="com.prapp.warehouse.ui.goodsreceipt.GoodsReceiptDetailFragment" android:label="GR Detail" tools:layout="@layout/fragment_goods_receipt_detail" />
+
+    <fragment android:id="@+id/inboundDeliveryFragment" android:name="com.prapp.warehouse.ui.inbounddelivery.InboundDeliveryFragment" android:label="Inbound Delivery" tools:layout="@layout/fragment_inbound_delivery">
+        <action android:id="@+id/action_inboundDelivery_to_detail" app:destination="@id/inboundDeliveryDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/inboundDeliveryDetailFragment" android:name="com.prapp.warehouse.ui.inbounddelivery.InboundDeliveryDetailFragment" android:label="IBD Detail" tools:layout="@layout/fragment_inbound_delivery_detail" />
+
+    <fragment android:id="@+id/goodsIssueFragment" android:name="com.prapp.warehouse.ui.goodsissue.GoodsIssueFragment" android:label="Goods Issue" tools:layout="@layout/fragment_goods_issue">
+        <action android:id="@+id/action_goodsIssue_to_detail" app:destination="@id/goodsIssueDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/goodsIssueDetailFragment" android:name="com.prapp.warehouse.ui.goodsissue.GoodsIssueDetailFragment" android:label="GI Detail" tools:layout="@layout/fragment_goods_issue_detail" />
+
+    <fragment android:id="@+id/physicalInventoryFragment" android:name="com.prapp.warehouse.ui.physicalinventory.PhysicalInventoryFragment" android:label="Physical Inventory" tools:layout="@layout/fragment_physical_inventory">
+        <action android:id="@+id/action_physicalInventory_to_detail" app:destination="@id/physicalInventoryDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/physicalInventoryDetailFragment" android:name="com.prapp.warehouse.ui.physicalinventory.PhysicalInventoryDetailFragment" android:label="PI Detail" tools:layout="@layout/fragment_physical_inventory_detail" />
+
+    <fragment android:id="@+id/stockOverviewFragment" android:name="com.prapp.warehouse.ui.stockoverview.StockOverviewFragment" android:label="Stock Overview" tools:layout="@layout/fragment_stock_overview" />
+
+    <fragment android:id="@+id/moveStockFragment" android:name="com.prapp.warehouse.ui.movestock.MoveStockFragment" android:label="Move Stock" tools:layout="@layout/fragment_move_stock" />
+
+    <fragment android:id="@+id/handlingUnitsFragment" android:name="com.prapp.warehouse.ui.handlingunits.HandlingUnitsFragment" android:label="Handling Units" tools:layout="@layout/fragment_handling_units">
+        <action android:id="@+id/action_handlingUnits_to_detail" app:destination="@id/handlingUnitDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/handlingUnitDetailFragment" android:name="com.prapp.warehouse.ui.handlingunits.HandlingUnitDetailFragment" android:label="HU Details" tools:layout="@layout/fragment_handling_unit_detail" />
+
+    <fragment android:id="@+id/inboundTaskFragment" android:name="com.prapp.warehouse.ui.inboundtasks.InboundTaskFragment" android:label="Inbound Tasks" tools:layout="@layout/fragment_inbound_tasks">
+        <action android:id="@+id/action_inboundTasks_to_putaway" app:destination="@id/putawayFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/putawayFragment" android:name="com.prapp.warehouse.ui.putaway.PutawayFragment" android:label="Confirm Putaway" tools:layout="@layout/fragment_putaway">
+        <argument android:name="warehouse" app:argType="string" />
+        <argument android:name="taskId" app:argType="string" />
+        <argument android:name="taskItem" app:argType="string" />
+    </fragment>
+
+    <fragment android:id="@+id/prListFragment" android:name="com.prapp.warehouse.ui.purchaserequisition.PrListFragment" android:label="Purchase Requisitions" tools:layout="@layout/fragment_pr_list">
+        <action android:id="@+id/action_prList_to_detail" app:destination="@id/prDetailFragment" />
+        <action android:id="@+id/action_prList_to_create" app:destination="@id/prCreateFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/prDetailFragment" android:name="com.prapp.warehouse.ui.purchaserequisition.PrDetailFragment" android:label="PR Details" tools:layout="@layout/fragment_pr_detail">
+        <argument android:name="PR_NUMBER" app:argType="string" app:nullable="true" />
+        <action android:id="@+id/action_prDetail_to_createItem" app:destination="@id/prCreateFragment" />
+        <action android:id="@+id/action_prDetail_to_convertPo" app:destination="@id/poFromPrFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/prCreateFragment" android:name="com.prapp.warehouse.ui.purchaserequisition.PrCreateFragment" android:label="Create PR or Add Item" tools:layout="@layout/fragment_pr_create">
+        <argument android:name="PR_NUMBER" app:argType="string" app:nullable="true" android:defaultValue="@null"/>
+    </fragment>
+
+    <fragment android:id="@+id/poFromPrFragment" android:name="com.prapp.warehouse.ui.purchaserequisition.PoFromPrFragment" android:label="Convert to PO" tools:layout="@layout/fragment_po_from_pr">
+        <argument android:name="PR_JSON" app:argType="string" app:nullable="false" />
+    </fragment>
+
+    <fragment android:id="@+id/obdSearchFragment" android:name="com.prapp.warehouse.ui.outbound.OutboundDeliverySearchFragment" android:label="Outbound Deliveries" tools:layout="@layout/fragment_obd_search">
+        <action android:id="@+id/action_obdSearch_to_obdDetail" app:destination="@id/obdDetailFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/obdDetailFragment" android:name="com.prapp.warehouse.ui.outbound.OutboundDeliveryDetailFragment" android:label="Delivery Details" tools:layout="@layout/fragment_obd_detail">
+        <argument android:name="obdData" app:argType="string" app:nullable="true" />
+    </fragment>
+
+    <fragment android:id="@+id/pickingSearchFragment" android:name="com.prapp.warehouse.ui.picking.PickingSearchFragment" android:label="Picking Tasks" tools:layout="@layout/fragment_picking_search">
+        <action android:id="@+id/action_pickingSearch_to_confirmPicking" app:destination="@id/confirmPickingFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/confirmPickingFragment" android:name="com.prapp.warehouse.ui.picking.ConfirmPickingFragment" android:label="Confirm Picking" tools:layout="@layout/fragment_confirm_picking">
+        <argument android:name="warehouse" app:argType="string" />
+        <argument android:name="taskId" app:argType="string" />
+        <argument android:name="taskItem" app:argType="string" />
+    </fragment>
+
+    <fragment android:id="@+id/internalMvmtMenuFragment" android:name="com.prapp.warehouse.ui.internalmovements.InternalMvmtMenuFragment" android:label="Internal Movements" tools:layout="@layout/fragment_internal_mvmt_menu">
+        <action android:id="@+id/action_internalMvmtMenu_to_adhocTaskCreate" app:destination="@id/adhocTaskCreateFragment" />
+        <action android:id="@+id/action_internalMvmtMenu_to_adhocTaskConfirm" app:destination="@id/adhocTaskConfirmFragment" />
+        <action android:id="@+id/action_internalMvmtMenu_to_piAdhocCreate" app:destination="@id/piAdhocCreateFragment" />
+        <action android:id="@+id/action_internalMvmtMenu_to_piCount" app:destination="@id/piCountFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/adhocTaskCreateFragment" android:name="com.prapp.warehouse.ui.internalmovements.AdhocTaskCreateFragment" android:label="Create Adhoc Task" tools:layout="@layout/fragment_adhoc_task_create" />
+    <fragment android:id="@+id/adhocTaskConfirmFragment" android:name="com.prapp.warehouse.ui.internalmovements.AdhocTaskConfirmFragment" android:label="Confirm Adhoc Task" tools:layout="@layout/fragment_adhoc_task_confirm" />
+    <fragment android:id="@+id/piAdhocCreateFragment" android:name="com.prapp.warehouse.ui.internalmovements.PiAdhocCreateFragment" android:label="PI Adhoc Create" tools:layout="@layout/fragment_pi_adhoc_create" />
+    <fragment android:id="@+id/piCountFragment" android:name="com.prapp.warehouse.ui.internalmovements.PiCountFragment" android:label="PI Count" tools:layout="@layout/fragment_pi_count" />
+
+    <fragment android:id="@+id/stockByBinFragment" android:name="com.prapp.warehouse.ui.availablestock.StockByBinFragment" android:label="Stock by Bin" tools:layout="@layout/fragment_stock_by_bin" />
+    <fragment android:id="@+id/stockByProductFragment" android:name="com.prapp.warehouse.ui.availablestock.StockByProductFragment" android:label="Stock by Product" tools:layout="@layout/fragment_stock_by_product" />
+
+    <fragment android:id="@+id/packingMenuFragment" android:name="com.prapp.warehouse.ui.packing.PackingMenuFragment" android:label="Packing" tools:layout="@layout/fragment_packing_menu">
+        <action android:id="@+id/action_packingMenu_to_huTransfer" app:destination="@id/huTransferFragment" />
+        <action android:id="@+id/action_packingMenu_to_packProduct" app:destination="@id/packProductFragment" />
+        <action android:id="@+id/action_packingMenu_to_createHU" app:destination="@id/createHUFragment" />
+    </fragment>
+    <fragment android:id="@+id/huTransferFragment" android:name="com.prapp.warehouse.ui.packing.HUTransferFragment" android:label="HU Transfer" tools:layout="@layout/fragment_hu_transfer" />
+    <fragment android:id="@+id/packProductFragment" android:name="com.prapp.warehouse.ui.packing.PackProductFragment" android:label="Pack Product" tools:layout="@layout/fragment_pack_product" />
+    <fragment android:id="@+id/createHUFragment" android:name="com.prapp.warehouse.ui.packing.CreateHUFragment" android:label="Create HU" tools:layout="@layout/fragment_create_hu" />
+
+    <fragment android:id="@+id/giReservationFragment" android:name="com.prapp.warehouse.ui.goodsissue.GIReservationFragment" android:label="GI Reservation" tools:layout="@layout/fragment_gi_reservation" />
+    <fragment android:id="@+id/giSTOFragment" android:name="com.prapp.warehouse.ui.goodsissue.GISTOFragment" android:label="GI STO" tools:layout="@layout/fragment_gi_sto" />
+
+</navigation>
+

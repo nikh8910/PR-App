@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/slate_50">
+
+    <!-- Custom Header mimicking Web App Menu.jsx -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="180dp" android:background="@color/brand_blue" android:elevation="8dp" app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Assuming a gradient drawable or simple dark blue for now, using 1E3A8A as web app's style. Web app has rounded-b-curved, but for now simple rect is ok unless we add a custom background drawable -->
+
+        <ImageView android:id="@+id/header_logo" android:layout_width="64dp" android:layout_height="64dp" android:layout_marginStart="24dp" android:layout_marginTop="32dp" android:src="@android:drawable/ic_menu_gallery" app:tint="#FFFFFF" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"/>
+
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginEnd="24dp" android:layout_marginTop="32dp" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent">
+            <!-- Bell Icon -->
+            <ImageView android:id="@+id/btn_notifications" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_dialog_alert" app:tint="#FFFFFF" android:padding="8dp" android:background="@drawable/bg_input_dark" android:layout_marginEnd="12dp" />
+
+            <!-- More Vertical (Logout) Icon -->
+            <ImageView android:id="@+id/btn_logout" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_menu_more" app:tint="#FFFFFF" android:padding="8dp" android:background="@drawable/bg_input_dark" android:clickable="true" android:focusable="true"/>
+        </LinearLayout>
+
+        <TextView android:id="@+id/text_welcome" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Welcome, User" android:textSize="20sp" android:textStyle="bold" android:textColor="#FFFFFF" android:textAllCaps="true" android:letterSpacing="0.05" android:layout_marginBottom="8dp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintBottom_toTopOf="@id/text_select_module" />
+
+        <TextView android:id="@+id/text_select_module" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SELECT A MODULE" android:textSize="12sp" android:textStyle="bold" android:textColor="@color/brand_light_blue" android:textAllCaps="true" android:letterSpacing="0.1" android:layout_marginBottom="24dp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:fillViewport="true" android:clipToPadding="false" android:paddingBottom="40dp" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+
+            <TextView android:id="@+id/text_dashboard_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dashboard" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/brand_blue" android:layout_marginBottom="24dp" />
+
+            <!-- Inventory Management Section Header -->
+            <LinearLayout android:id="@+id/section_inventory_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="12dp" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="INVENTORY MANAGEMENT" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/slate_500" />
+                <ImageView android:id="@+id/icon_inventory_toggle" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/arrow_up_float" app:tint="#94A3B8" />
+            </LinearLayout>
+
+            <GridLayout android:id="@+id/grid_inventory" android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="3" android:useDefaultMargins="false" android:alignmentMode="alignBounds" android:layout_marginBottom="24dp">
+
+                <LinearLayout android:id="@+id/card_goods_receipt" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_add" app:tint="#10B981" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Goods Receipt" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_goods_issue" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_send" app:tint="#F97316" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Goods Issue" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_physical_inventory" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_agenda" app:tint="#8B5CF6" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Physical Count" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_stock_overview" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_gallery" app:tint="#06B6D4" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stock Overview" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_purchase_req" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_edit" app:tint="#3B82F6" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Purchase Req" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <View android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" />
+
+            </GridLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/slate_200" android:layout_marginBottom="24dp"/>
+
+            <!-- Warehouse Management Section Header -->
+            <LinearLayout android:id="@+id/section_warehouse_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="12dp" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="WAREHOUSE MANAGEMENT" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/slate_500" />
+                <ImageView android:id="@+id/icon_warehouse_toggle" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/arrow_up_float" app:tint="#94A3B8" />
+            </LinearLayout>
+
+            <GridLayout android:id="@+id/grid_warehouse" android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="3" android:useDefaultMargins="false" android:alignmentMode="alignBounds" android:layout_marginBottom="24dp">
+
+                <LinearLayout android:id="@+id/card_inbound" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_save" app:tint="#3B82F6" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Inbound" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_outbound" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_upload" app:tint="#F97316" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Outbound" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_internal_movement" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_directions" app:tint="#7C3AED" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Internal Mvmt" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_available_stock" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_view" app:tint="#06B6D4" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Avail. Stock" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_packing" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_manage" app:tint="#DB2777" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Packing" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_picking" android:layout_width="0dp" android:layout_height="100dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true">
+                    <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_sort_by_size" app:tint="#EF4444" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Picking" android:textStyle="bold" android:textColor="@color/slate_700" android:textSize="12sp" android:gravity="center"/>
+                </LinearLayout>
+
+            </GridLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:background="@drawable/bg_card" android:elevation="2dp" android:padding="16dp">
+
+    <!-- Header Row -->
+    <TextView android:id="@+id/text_delivery_id" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="80000123" android:textColor="#F1F5F9" android:textSize="18sp" android:textStyle="bold" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView android:id="@+id/text_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_status_yellow" android:paddingHorizontal="8dp" android:paddingVertical="4dp" android:text="Not Started" android:textColor="#D97706" android:textSize="12sp" android:textStyle="bold" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Info Row -->
+    <LinearLayout android:id="@+id/layout_info" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="vertical" app:layout_constraintTop_toBottomOf="@id/text_delivery_id">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:orientation="horizontal">
+
+            <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="Ship-To:" android:textColor="#94A3B8" android:textSize="14sp" />
+
+            <TextView android:id="@+id/text_ship_to" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Partner Name" android:textColor="#CBD5E1" android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+
+            <TextView android:layout_width="100dp" android:layout_height="wrap_content" android:text="GI Status:" android:textColor="#94A3B8" android:textSize="14sp" />
+
+            <TextView android:id="@+id/text_gi_status" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="A - Not Started" android:textColor="#CBD5E1" android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

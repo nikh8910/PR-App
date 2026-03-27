@@ -1,0 +1,697 @@
+openapi: 3.0.0
+info:
+  title: Warehouse Resource (A2X)
+  version: 1.2.1
+  description: "In every API call, you can make use of the following operations:\r\n - You can retrieve warehouse resources. Apply any of the filters provided or retrieve all existing data.\r\n - You can create and delete warehouse resources.\r\n - You can update existing warehouse resources (log on, log off).\r\n - You can retrieve the sequence of queues that is assigned to the resource group of a warehouse resource."
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/71/cbc776f17b4e63b1506d4d4ca66866/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Integrate external applications with warehouse resources with this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Process Warehouse Task Integration (SAP_COM_0353), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Inbound Processing (3BR)](https://me.sap.com/processnavigator/SolP/3BR " Link To BP ")', format: markdown}
+  - {text: '[Resource Management in Warehousing (3W0)](https://me.sap.com/processnavigator/SolP/3W0 " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WAREHOUSE_RESOURCE_2, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Resource, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_warehouse_resource_2/srvd_a2x/sap/warehouseresource/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_warehouse_resource_2/srvd_a2x/sap/warehouseresource/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Warehouse Resource}
+- {name: Warehouse Resource Group Queue Sequence}
+paths:
+  /WarehouseResource:
+    get:
+      summary: Get entities from WarehouseResource
+      tags: [Warehouse Resource]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, EWMResource, EWMResource desc, UserName, UserName desc, EWMResourceGroup, EWMResourceGroup desc, EWMResourceType, EWMResourceType desc, WarehouseOrderQueue, WarehouseOrderQueue desc, EWMCurrentQueue, EWMCurrentQueue desc, EWMStorTypeOfLastWhseTaskConf, EWMStorTypeOfLastWhseTaskConf desc, EWMResourceLogonDateTime, EWMResourceLogonDateTime desc, EWMRsceIsLoggedOntoByCurUser, EWMRsceIsLoggedOntoByCurUser desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResource, UserName, EWMResourceGroup, EWMResourceType, WarehouseOrderQueue, EWMCurrentQueue, EWMStorTypeOfLastWhseTaskConf, EWMResourceLogonDateTime, EWMRsceIsLoggedOntoByCurUser, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseResourceGroupQueueSqnc]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseResourceType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WarehouseResource
+      tags: [Warehouse Resource]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseResource/{EWMWarehouse}/{EWMResource}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: EWMResource
+      in: path
+      required: true
+      description: Resource (Means of Transportation or User)
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get entity from WarehouseResource by key
+      tags: [Warehouse Resource]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResource, UserName, EWMResourceGroup, EWMResourceType, WarehouseOrderQueue, EWMCurrentQueue, EWMStorTypeOfLastWhseTaskConf, EWMResourceLogonDateTime, EWMRsceIsLoggedOntoByCurUser, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseResourceGroupQueueSqnc]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WarehouseResource
+      tags: [Warehouse Resource]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+    delete:
+      summary: Delete entity from WarehouseResource
+      tags: [Warehouse Resource]
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseResource/{EWMWarehouse}/{EWMResource}/SAP__self.LogonToWarehouseResource:
+    post:
+      summary: Invoke action LogonToWarehouseResource
+      tags: [Warehouse Resource]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMResource
+        in: path
+        required: true
+        description: Resource (Means of Transportation or User)
+        schema: {type: string, maxLength: 18}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseResource/{EWMWarehouse}/{EWMResource}/SAP__self.LogoffFromWarehouseResource:
+    post:
+      summary: Invoke action LogoffFromWarehouseResource
+      tags: [Warehouse Resource]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: EWMResource
+        in: path
+        required: true
+        description: Resource (Means of Transportation or User)
+        schema: {type: string, maxLength: 18}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseResource/{EWMWarehouse}/{EWMResource}/_WhseResourceGroupQueueSqnc:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: EWMResource
+      in: path
+      required: true
+      description: Resource (Means of Transportation or User)
+      schema: {type: string, maxLength: 18}
+    get:
+      summary: Get entities from related _WhseResourceGroupQueueSqnc
+      tags: [Warehouse Resource, Warehouse Resource Group Queue Sequence]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, EWMResourceGroup, EWMResourceGroup desc, EWMResourceGroupQueueSqncNmbr, EWMResourceGroupQueueSqncNmbr desc, WarehouseOrderQueue, WarehouseOrderQueue desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResourceGroup, EWMResourceGroupQueueSqncNmbr, WarehouseOrderQueue]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseResource]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseResourceGroupSequence_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseResourceGroupQueueSqnc:
+    get:
+      summary: Get entities from WhseResourceGroupQueueSqnc
+      tags: [Warehouse Resource Group Queue Sequence]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, EWMResourceGroup, EWMResourceGroup desc, EWMResourceGroupQueueSqncNmbr, EWMResourceGroupQueueSqncNmbr desc, WarehouseOrderQueue, WarehouseOrderQueue desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResourceGroup, EWMResourceGroupQueueSqncNmbr, WarehouseOrderQueue]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseResource]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WhseResourceGroupSequence_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseResourceGroupQueueSqnc/{EWMWarehouse}/{EWMResourceGroup}/{EWMResourceGroupQueueSqncNmbr}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: EWMResourceGroup
+      in: path
+      required: true
+      description: Resource Group
+      schema: {type: string, maxLength: 4}
+    - name: EWMResourceGroupQueueSqncNmbr
+      in: path
+      required: true
+      description: Sequence Number
+      schema: {type: string, maxLength: 5}
+    get:
+      summary: Get entity from WhseResourceGroupQueueSqnc by key
+      tags: [Warehouse Resource Group Queue Sequence]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResourceGroup, EWMResourceGroupQueueSqncNmbr, WarehouseOrderQueue]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseResource]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WhseResourceGroupQueueSqnc/{EWMWarehouse}/{EWMResourceGroup}/{EWMResourceGroupQueueSqncNmbr}/_WarehouseResource:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: EWMResourceGroup
+      in: path
+      required: true
+      description: Resource Group
+      schema: {type: string, maxLength: 4}
+    - name: EWMResourceGroupQueueSqncNmbr
+      in: path
+      required: true
+      description: Sequence Number
+      schema: {type: string, maxLength: 5}
+    get:
+      summary: Get entities from related _WarehouseResource
+      tags: [Warehouse Resource Group Queue Sequence, Warehouse Resource]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, EWMResource, EWMResource desc, UserName, UserName desc, EWMResourceGroup, EWMResourceGroup desc, EWMResourceType, EWMResourceType desc, WarehouseOrderQueue, WarehouseOrderQueue desc, EWMCurrentQueue, EWMCurrentQueue desc, EWMStorTypeOfLastWhseTaskConf, EWMStorTypeOfLastWhseTaskConf desc, EWMResourceLogonDateTime, EWMResourceLogonDateTime desc, EWMRsceIsLoggedOntoByCurUser, EWMRsceIsLoggedOntoByCurUser desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMResource, UserName, EWMResourceGroup, EWMResourceType, WarehouseOrderQueue, EWMCurrentQueue, EWMStorTypeOfLastWhseTaskConf, EWMResourceLogonDateTime, EWMRsceIsLoggedOntoByCurUser, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WhseResourceGroupQueueSqnc]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseResourceType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to related _WarehouseResource
+      tags: [Warehouse Resource Group Queue Sequence, Warehouse Resource]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WarehouseResource HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMResource: {type: string, maxLength: 18, title: Resource, description: Resource (Means of Transportation or User)}
+        UserName: {type: string, maxLength: 12, title: User, description: User Name in User Master Record}
+        EWMResourceGroup: {type: string, maxLength: 4, title: Resource Group}
+        EWMResourceType: {type: string, maxLength: 4, title: Resource Type}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        EWMCurrentQueue: {type: string, maxLength: 10, title: Actual Queue, description: Actual Queue of Resource}
+        EWMStorTypeOfLastWhseTaskConf: {type: string, maxLength: 4, title: Storage Type, description: Storage Type of Last Removal}
+        EWMResourceLogonDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        EWMRsceIsLoggedOntoByCurUser: {type: boolean, title: Truth Value, description: 'Truth Value: True/False'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message'}
+        _WhseResourceGroupQueueSqnc:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type'}
+      title: Warehouse Resource
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-create:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMResource: {type: string, maxLength: 18, title: Resource, description: Resource (Means of Transportation or User)}
+        EWMResourceGroup: {type: string, maxLength: 4, title: Resource Group}
+        EWMResourceType: {type: string, maxLength: 4, title: Resource Type}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message-create'}
+        _WhseResourceGroupQueueSqnc:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type-create'}
+      required: [EWMWarehouse, EWMResource]
+      title: Warehouse Resource (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-update:
+      type: object
+      properties:
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message-update'}
+      title: Warehouse Resource (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMResourceGroup: {type: string, maxLength: 4, title: Resource Group}
+        EWMResourceGroupQueueSqncNmbr: {type: string, maxLength: 5, title: Sequence Number}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        _WarehouseResource:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType'}
+      title: Warehouse Resource Group Queue Sequence
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type-create:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        EWMResourceGroup: {type: string, maxLength: 4, title: Resource Group}
+        EWMResourceGroupQueueSqncNmbr: {type: string, maxLength: 5, title: Sequence Number}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        _WarehouseResource:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WarehouseResourceType-create'}
+      required: [EWMWarehouse, EWMResourceGroup, EWMResourceGroupQueueSqncNmbr]
+      title: Warehouse Resource Group Queue Sequence (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.WhseResourceGroupSequence_Type-update:
+      type: object
+      properties:
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+      title: Warehouse Resource Group Queue Sequence (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_resource_2.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WAREHOUSE_RESOURCE_2': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WAREHOUSE_RESOURCE_2']
+- BasicAuth: []

@@ -1,0 +1,2435 @@
+openapi: 3.0.0
+info:
+  title: Warehouse Order and Task (A2X)
+  version: 1.13.0
+  description: "In every API call, you can make use of the following operations:\r\n - You can retrieve warehouse orders and warehouse tasks with their serial numbers. Apply any of the filters provided or retrieve all existing data.\r\n - For existing warehouse orders, you can update the corresponding warehouse tasks.\r\n - You can update existing warehouse tasks (confirm, confirm with exceptions, confirm with serial numbers, confirm batch-neutral warehouse tasks, cancel, reassign warehouse task to warehouse order).\r\n - You can update existing warehouse orders (assign or unassign warehouse order to warehouse resource, lock, unlock, merge, and split).\r\n - You can create warehouse tasks (product warehouse tasks, handling unit warehouse tasks, and warehouse tasks for warehouse requests, including inbound deliveries, outbound delivery orders, and production material requests).\r\n\r\n#"
+externalDocs: {description: Business Documentation, url: 'https://help.sap.com/http.svc/ahp2/SAP_S4HANA_CLOUD/2602.latest/EN/3f/4ed3d800bb42ce9588fc7fa4051a9a/frameset.htm'}
+x-sap-api-type: ODATAV4
+x-sap-shortText: Integrate external applications with warehouse orders and warehouse tasks with this synchronous inbound service
+x-sap-software-min-version: '2602'
+x-sap-ext-overview:
+- name: Communication Scenario
+  values:
+  - {text: Warehousing - Process Warehouse Task Integration (SAP_COM_0353), format: plain}
+- name: Scope Items
+  values:
+  - {text: '[Warehouse Inbound Processing (3BR)](https://me.sap.com/processnavigator/SolP/3BR " Link To BP ")', format: markdown}
+  - {text: '[Resource Management in Warehousing (3W0)](https://me.sap.com/processnavigator/SolP/3W0 " Link To BP ")', format: markdown}
+- name: Authentication Methods
+  values:
+  - {text: x509, format: plain}
+- name: Service Group Name
+  values:
+  - {text: API_WAREHOUSE_ORDER_TASK_2, format: plain}
+- name: Business Object
+  values:
+  - {text: Warehouse Order, format: plain}
+servers:
+- url: https://{host}:{port}/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/sap/warehouseorder/0001
+  variables:
+    host: {default: ''}
+    port: {default: ''}
+- {url: 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/sap/warehouseorder/0001'}
+x-sap-extensible: {supported: 'no'}
+tags:
+- {name: Warehouse Order}
+- {name: Warehouse Order Pick Handling Unit}
+- {name: Warehouse Task}
+- {name: Warehouse Task Exception Code}
+- {name: Warehouse Task Serial Number}
+paths:
+  /WarehouseOrder:
+    get:
+      summary: Get entities from WarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseOrder, WarehouseOrder desc, WarehouseOrderStatus, WarehouseOrderStatus desc, WhseOrderCreationDateTime, WhseOrderCreationDateTime desc, WarehouseOrderStartDateTime, WarehouseOrderStartDateTime desc, WhseOrderConfirmedDateTime, WhseOrderConfirmedDateTime desc, WhseOrderLastChgUTCDateTime, WhseOrderLastChgUTCDateTime desc, WhseOrderLatestStartDateTime, WhseOrderLatestStartDateTime desc, WarehouseOrderCreationRule, WarehouseOrderCreationRule desc, WhseOrderCreationRuleCategory, WhseOrderCreationRuleCategory desc, ActivityArea, ActivityArea desc, Queue, Queue desc, Processor, Processor desc, ExecutingResource, ExecutingResource desc, EWMWave, EWMWave desc, WhseProcessTypeDocumentHdr, WhseProcessTypeDocumentHdr desc, CreatedByUser, CreatedByUser desc, LastChangedByUser, LastChangedByUser desc, ConfirmedByUser, ConfirmedByUser desc, WhseOrderForSplitWhseOrder, WhseOrderForSplitWhseOrder desc, WarehouseOrderIsSplit, WarehouseOrderIsSplit desc, WarehouseOrderPlannedDuration, WarehouseOrderPlannedDuration desc, WhseOrderPlanDurationTimeUnit, WhseOrderPlanDurationTimeUnit desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, WarehouseOrderStatus, WhseOrderCreationDateTime, WarehouseOrderStartDateTime, WhseOrderConfirmedDateTime, WhseOrderLastChgUTCDateTime, WhseOrderLatestStartDateTime, WarehouseOrderCreationRule, WhseOrderCreationRuleCategory, ActivityArea, Queue, Processor, ExecutingResource, EWMWave, WhseProcessTypeDocumentHdr, CreatedByUser, LastChangedByUser, ConfirmedByUser, WhseOrderForSplitWhseOrder, WarehouseOrderIsSplit, WarehouseOrderPlannedDuration, WhseOrderPlanDurationTimeUnit, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrderPickHndlgUnit, _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseOrderType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/SAP__self.MergeWarehouseOrder:
+    post:
+      summary: Invoke action MergeWarehouseOrder
+      tags: [Warehouse Order]
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EWMWarehouse: {type: string, maxLength: 4}
+                WarehouseOrderCreationRule: {type: string, maxLength: 4}
+                _WarehouseOrderMergeChild:
+                  type: array
+                  items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderMergeChildP'}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseOrderType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseOrder
+      in: path
+      required: true
+      description: Warehouse Order Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get entity from WarehouseOrder by key
+      tags: [Warehouse Order]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, WarehouseOrderStatus, WhseOrderCreationDateTime, WarehouseOrderStartDateTime, WhseOrderConfirmedDateTime, WhseOrderLastChgUTCDateTime, WhseOrderLatestStartDateTime, WarehouseOrderCreationRule, WhseOrderCreationRuleCategory, ActivityArea, Queue, Processor, ExecutingResource, EWMWave, WhseProcessTypeDocumentHdr, CreatedByUser, LastChangedByUser, ConfirmedByUser, WhseOrderForSplitWhseOrder, WarehouseOrderIsSplit, WarehouseOrderPlannedDuration, WhseOrderPlanDurationTimeUnit, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrderPickHndlgUnit, _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+    patch:
+      summary: Update entity in WarehouseOrder
+      tags: [Warehouse Order]
+      requestBody:
+        required: true
+        description: New property values
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType-update'}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.AssignWarehouseOrder:
+    post:
+      summary: Invoke action AssignWarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EWMResource: {type: string, maxLength: 18}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.SplitWarehouseOrder:
+    post:
+      summary: Invoke action SplitWarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                WarehouseOrderCreationRule: {type: string, maxLength: 4}
+                _WarehouseOrderSplitChild:
+                  type: array
+                  items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderSplitChildP'}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseOrderType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.SetWarehouseOrderToInProcess:
+    post:
+      summary: Invoke action SetWarehouseOrderToInProcess
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.UnlockWarehouseOrder:
+    post:
+      summary: Invoke action UnlockWarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.UnassignWarehouseOrder:
+    post:
+      summary: Invoke action UnassignWarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/SAP__self.LockWarehouseOrder:
+    post:
+      summary: Invoke action LockWarehouseOrder
+      tags: [Warehouse Order]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseOrder
+        in: path
+        required: true
+        description: Warehouse Order Number
+        schema: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/_WarehouseOrderPickHndlgUnit:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseOrder
+      in: path
+      required: true
+      description: Warehouse Order Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get entities from related _WarehouseOrderPickHndlgUnit
+      tags: [Warehouse Order, Warehouse Order Pick Handling Unit]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseOrder, WarehouseOrder desc, HandlingUnitExternalID, HandlingUnitExternalID desc, PackagingMaterial, PackagingMaterial desc, EWMWhseOrderNmbrOfHndlgUnits, EWMWhseOrderNmbrOfHndlgUnits desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, HandlingUnitExternalID, PackagingMaterial, EWMWhseOrderNmbrOfHndlgUnits, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseOrderPickHndlgUnit_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrder/{EWMWarehouse}/{WarehouseOrder}/_WarehouseTask:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseOrder
+      in: path
+      required: true
+      description: Warehouse Order Number
+      schema: {type: string, maxLength: 10}
+    get:
+      summary: Get entities from related _WarehouseTask
+      tags: [Warehouse Order, Warehouse Task]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, WarehouseOrder, WarehouseOrder desc, WhseTaskCrtnUTCDateTime, WhseTaskCrtnUTCDateTime desc, WhseTaskLastChgUTCDateTime, WhseTaskLastChgUTCDateTime desc, WhseTaskConfUTCDateTime, WhseTaskConfUTCDateTime desc, ConfirmedByUser, ConfirmedByUser desc, WhseTaskPlannedClosingDateTime, WhseTaskPlannedClosingDateTime desc, WhseTaskGoodsReceiptDateTime, WhseTaskGoodsReceiptDateTime desc, WarehouseTaskStatus, WarehouseTaskStatus desc, WarehouseProcessType, WarehouseProcessType desc, WarehouseProcessCategory, WarehouseProcessCategory desc, IsHandlingUnitWarehouseTask, IsHandlingUnitWarehouseTask desc, EWMHandlingUnitType, EWMHandlingUnitType desc, HandlingUnitTypeGroup, HandlingUnitTypeGroup desc, HomogeneousFullPalletPick, HomogeneousFullPalletPick desc, EWMPutAwayPhysInvtryPlnSts, EWMPutAwayPhysInvtryPlnSts desc, EWMWhseTskLowStkChkPlnSts, EWMWhseTskLowStkChkPlnSts desc, EWMPutAwayPhysInvtryExecSts, EWMPutAwayPhysInvtryExecSts desc, EWMWhseTskLowStkChkExecSts, EWMWhseTskLowStkChkExecSts desc, Product, Product desc, Batch, Batch desc, BatchChangeIsNotAllowed, BatchChangeIsNotAllowed desc, CountryOfOrigin, CountryOfOrigin desc, ShelfLifeExpirationDate, ShelfLifeExpirationDate desc, EWMStockType, EWMStockType desc, EWMStockUsage, EWMStockUsage desc, EWMStockOwner, EWMStockOwner desc, EntitledToDisposeParty, EntitledToDisposeParty desc, WBSElementInternalID, WBSElementInternalID desc, WBSElementExternalID, WBSElementExternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, ExecutingResource, ExecutingResource desc, WarehouseMovementsReason, WarehouseMovementsReason desc, ProductionOrder, ProductionOrder desc, EWMProductionSupplyArea, EWMProductionSupplyArea desc, EWMDocumentCategory, EWMDocumentCategory desc, EWMReferenceDocumentCategory, EWMReferenceDocumentCategory desc, EWMWave, EWMWave desc, EWMWaveItem, EWMWaveItem desc, EWMDelivery, EWMDelivery desc, EWMDeliveryItem, EWMDeliveryItem desc, EWMProductionMaterialRequest, EWMProductionMaterialRequest desc, EWMProductionMaterialReqItem, EWMProductionMaterialReqItem desc, PurchasingDocument, PurchasingDocument desc, PurchasingDocumentItem, PurchasingDocumentItem desc, SalesDocument, SalesDocument desc, SalesDocumentItem, SalesDocumentItem desc, BaseUnit, BaseUnit desc, EWMBaseUnitISOCode, EWMBaseUnitISOCode desc, AlternativeUnit, AlternativeUnit desc, EWMAlternativeUnitISOCode, EWMAlternativeUnitISOCode desc, TargetQuantityInBaseUnit, TargetQuantityInBaseUnit desc, TargetQuantityInAltvUnit, TargetQuantityInAltvUnit desc, ActualQuantityInBaseUnit, ActualQuantityInBaseUnit desc, ActualQuantityInAltvUnit, ActualQuantityInAltvUnit desc, DifferenceQuantityInBaseUnit, DifferenceQuantityInBaseUnit desc, DifferenceQuantityInAltvUnit, DifferenceQuantityInAltvUnit desc, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeightUnitOfMeasure desc, WhseTaskNetWeight, WhseTaskNetWeight desc, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolumeUnitOfMeasure desc, WhseTaskNetVolume, WhseTaskNetVolume desc, Kanban, Kanban desc, SourceStorageType, SourceStorageType desc, SourceStorageSection, SourceStorageSection desc, SourceStorageBin, SourceStorageBin desc, SourceResource, SourceResource desc, DestinationStorageType, DestinationStorageType desc, DestinationStorageSection, DestinationStorageSection desc, DestinationStorageBin, DestinationStorageBin desc, DestinationResource, DestinationResource desc, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingType desc, WhseTaskTwoStepPickingRlvnce, WhseTaskTwoStepPickingRlvnce desc, ActivityArea, ActivityArea desc, SourceHandlingUnit, SourceHandlingUnit desc, DestinationHandlingUnit, DestinationHandlingUnit desc, WrhsTaskSubsystemTransmn, WrhsTaskSubsystemTransmn desc, WarehouseTaskExceptionCode, WarehouseTaskExceptionCode desc, WhseTaskSortingSequenceValue, WhseTaskSortingSequenceValue desc, WarehouseOrderSequenceValue, WarehouseOrderSequenceValue desc, WarehouseOrderActivityArea, WarehouseOrderActivityArea desc, WarehouseOrderCreationRule, WarehouseOrderCreationRule desc, WarehouseOrderQueue, WarehouseOrderQueue desc, WarehouseActivityType, WarehouseActivityType desc, EWMConsolidationGroup, EWMConsolidationGroup desc, EWMWarehouseTaskPriority, EWMWarehouseTaskPriority desc, CreatedByUser, CreatedByUser desc, EWMRoute, EWMRoute desc, EWMWaveCategory, EWMWaveCategory desc, EWMCanceledWarehouseTask, EWMCanceledWarehouseTask desc, SerialNumberRequiredLevel, SerialNumberRequiredLevel desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseOrder, WhseTaskCrtnUTCDateTime, WhseTaskLastChgUTCDateTime, WhseTaskConfUTCDateTime, ConfirmedByUser, WhseTaskPlannedClosingDateTime, WhseTaskGoodsReceiptDateTime, WarehouseTaskStatus, WarehouseProcessType, WarehouseProcessCategory, IsHandlingUnitWarehouseTask, EWMHandlingUnitType, HandlingUnitTypeGroup, HomogeneousFullPalletPick, EWMPutAwayPhysInvtryPlnSts, EWMWhseTskLowStkChkPlnSts, EWMPutAwayPhysInvtryExecSts, EWMWhseTskLowStkChkExecSts, Product, Batch, BatchChangeIsNotAllowed, CountryOfOrigin, ShelfLifeExpirationDate, EWMStockType, EWMStockUsage, EWMStockOwner, EntitledToDisposeParty, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, ExecutingResource, WarehouseMovementsReason, ProductionOrder, EWMProductionSupplyArea, EWMDocumentCategory, EWMReferenceDocumentCategory, EWMWave, EWMWaveItem, EWMDelivery, EWMDeliveryItem, EWMProductionMaterialRequest, EWMProductionMaterialReqItem, PurchasingDocument, PurchasingDocumentItem, SalesDocument, SalesDocumentItem, BaseUnit, EWMBaseUnitISOCode, AlternativeUnit, EWMAlternativeUnitISOCode, TargetQuantityInBaseUnit, TargetQuantityInAltvUnit, ActualQuantityInBaseUnit, ActualQuantityInAltvUnit, DifferenceQuantityInBaseUnit, DifferenceQuantityInAltvUnit, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeight, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolume, Kanban, SourceStorageType, SourceStorageSection, SourceStorageBin, SourceResource, DestinationStorageType, DestinationStorageSection, DestinationStorageBin, DestinationResource, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingRlvnce, ActivityArea, SourceHandlingUnit, DestinationHandlingUnit, WrhsTaskSubsystemTransmn, WarehouseTaskExceptionCode, WhseTaskSortingSequenceValue, WarehouseOrderSequenceValue, WarehouseOrderActivityArea, WarehouseOrderCreationRule, WarehouseOrderQueue, WarehouseActivityType, EWMConsolidationGroup, EWMWarehouseTaskPriority, CreatedByUser, EWMRoute, EWMWaveCategory, EWMCanceledWarehouseTask, SerialNumberRequiredLevel, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder, _WarehouseTaskExceptionCode, _WarehouseTaskSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrderPickHndlgUnit:
+    get:
+      summary: Get entities from WarehouseOrderPickHndlgUnit
+      tags: [Warehouse Order Pick Handling Unit]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseOrder, WarehouseOrder desc, HandlingUnitExternalID, HandlingUnitExternalID desc, PackagingMaterial, PackagingMaterial desc, EWMWhseOrderNmbrOfHndlgUnits, EWMWhseOrderNmbrOfHndlgUnits desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, HandlingUnitExternalID, PackagingMaterial, EWMWhseOrderNmbrOfHndlgUnits, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseOrderPickHndlgUnit_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WarehouseOrderPickHndlgUnit
+      tags: [Warehouse Order Pick Handling Unit]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrderPickHndlgUnit/{EWMWarehouse}/{WarehouseOrder}/{HandlingUnitExternalID}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseOrder
+      in: path
+      required: true
+      description: Warehouse Order Number
+      schema: {type: string, maxLength: 10}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: Handling Unit
+      schema: {type: string, maxLength: 20}
+    get:
+      summary: Get entity from WarehouseOrderPickHndlgUnit by key
+      tags: [Warehouse Order Pick Handling Unit]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, HandlingUnitExternalID, PackagingMaterial, EWMWhseOrderNmbrOfHndlgUnits, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+    delete:
+      summary: Delete entity from WarehouseOrderPickHndlgUnit
+      tags: [Warehouse Order Pick Handling Unit]
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseOrderPickHndlgUnit/{EWMWarehouse}/{WarehouseOrder}/{HandlingUnitExternalID}/_WarehouseOrder:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseOrder
+      in: path
+      required: true
+      description: Warehouse Order Number
+      schema: {type: string, maxLength: 10}
+    - name: HandlingUnitExternalID
+      in: path
+      required: true
+      description: Handling Unit
+      schema: {type: string, maxLength: 20}
+    get:
+      summary: Get related _WarehouseOrder
+      tags: [Warehouse Order Pick Handling Unit, Warehouse Order]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, WarehouseOrderStatus, WhseOrderCreationDateTime, WarehouseOrderStartDateTime, WhseOrderConfirmedDateTime, WhseOrderLastChgUTCDateTime, WhseOrderLatestStartDateTime, WarehouseOrderCreationRule, WhseOrderCreationRuleCategory, ActivityArea, Queue, Processor, ExecutingResource, EWMWave, WhseProcessTypeDocumentHdr, CreatedByUser, LastChangedByUser, ConfirmedByUser, WhseOrderForSplitWhseOrder, WarehouseOrderIsSplit, WarehouseOrderPlannedDuration, WhseOrderPlanDurationTimeUnit, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrderPickHndlgUnit, _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask:
+    get:
+      summary: Get entities from WarehouseTask
+      tags: [Warehouse Task]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, WarehouseOrder, WarehouseOrder desc, WhseTaskCrtnUTCDateTime, WhseTaskCrtnUTCDateTime desc, WhseTaskLastChgUTCDateTime, WhseTaskLastChgUTCDateTime desc, WhseTaskConfUTCDateTime, WhseTaskConfUTCDateTime desc, ConfirmedByUser, ConfirmedByUser desc, WhseTaskPlannedClosingDateTime, WhseTaskPlannedClosingDateTime desc, WhseTaskGoodsReceiptDateTime, WhseTaskGoodsReceiptDateTime desc, WarehouseTaskStatus, WarehouseTaskStatus desc, WarehouseProcessType, WarehouseProcessType desc, WarehouseProcessCategory, WarehouseProcessCategory desc, IsHandlingUnitWarehouseTask, IsHandlingUnitWarehouseTask desc, EWMHandlingUnitType, EWMHandlingUnitType desc, HandlingUnitTypeGroup, HandlingUnitTypeGroup desc, HomogeneousFullPalletPick, HomogeneousFullPalletPick desc, EWMPutAwayPhysInvtryPlnSts, EWMPutAwayPhysInvtryPlnSts desc, EWMWhseTskLowStkChkPlnSts, EWMWhseTskLowStkChkPlnSts desc, EWMPutAwayPhysInvtryExecSts, EWMPutAwayPhysInvtryExecSts desc, EWMWhseTskLowStkChkExecSts, EWMWhseTskLowStkChkExecSts desc, Product, Product desc, Batch, Batch desc, BatchChangeIsNotAllowed, BatchChangeIsNotAllowed desc, CountryOfOrigin, CountryOfOrigin desc, ShelfLifeExpirationDate, ShelfLifeExpirationDate desc, EWMStockType, EWMStockType desc, EWMStockUsage, EWMStockUsage desc, EWMStockOwner, EWMStockOwner desc, EntitledToDisposeParty, EntitledToDisposeParty desc, WBSElementInternalID, WBSElementInternalID desc, WBSElementExternalID, WBSElementExternalID desc, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrder desc, SpecialStockIdfgSalesOrderItem, SpecialStockIdfgSalesOrderItem desc, ExecutingResource, ExecutingResource desc, WarehouseMovementsReason, WarehouseMovementsReason desc, ProductionOrder, ProductionOrder desc, EWMProductionSupplyArea, EWMProductionSupplyArea desc, EWMDocumentCategory, EWMDocumentCategory desc, EWMReferenceDocumentCategory, EWMReferenceDocumentCategory desc, EWMWave, EWMWave desc, EWMWaveItem, EWMWaveItem desc, EWMDelivery, EWMDelivery desc, EWMDeliveryItem, EWMDeliveryItem desc, EWMProductionMaterialRequest, EWMProductionMaterialRequest desc, EWMProductionMaterialReqItem, EWMProductionMaterialReqItem desc, PurchasingDocument, PurchasingDocument desc, PurchasingDocumentItem, PurchasingDocumentItem desc, SalesDocument, SalesDocument desc, SalesDocumentItem, SalesDocumentItem desc, BaseUnit, BaseUnit desc, EWMBaseUnitISOCode, EWMBaseUnitISOCode desc, AlternativeUnit, AlternativeUnit desc, EWMAlternativeUnitISOCode, EWMAlternativeUnitISOCode desc, TargetQuantityInBaseUnit, TargetQuantityInBaseUnit desc, TargetQuantityInAltvUnit, TargetQuantityInAltvUnit desc, ActualQuantityInBaseUnit, ActualQuantityInBaseUnit desc, ActualQuantityInAltvUnit, ActualQuantityInAltvUnit desc, DifferenceQuantityInBaseUnit, DifferenceQuantityInBaseUnit desc, DifferenceQuantityInAltvUnit, DifferenceQuantityInAltvUnit desc, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeightUnitOfMeasure desc, WhseTaskNetWeight, WhseTaskNetWeight desc, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolumeUnitOfMeasure desc, WhseTaskNetVolume, WhseTaskNetVolume desc, Kanban, Kanban desc, SourceStorageType, SourceStorageType desc, SourceStorageSection, SourceStorageSection desc, SourceStorageBin, SourceStorageBin desc, SourceResource, SourceResource desc, DestinationStorageType, DestinationStorageType desc, DestinationStorageSection, DestinationStorageSection desc, DestinationStorageBin, DestinationStorageBin desc, DestinationResource, DestinationResource desc, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingType desc, WhseTaskTwoStepPickingRlvnce, WhseTaskTwoStepPickingRlvnce desc, ActivityArea, ActivityArea desc, SourceHandlingUnit, SourceHandlingUnit desc, DestinationHandlingUnit, DestinationHandlingUnit desc, WrhsTaskSubsystemTransmn, WrhsTaskSubsystemTransmn desc, WarehouseTaskExceptionCode, WarehouseTaskExceptionCode desc, WhseTaskSortingSequenceValue, WhseTaskSortingSequenceValue desc, WarehouseOrderSequenceValue, WarehouseOrderSequenceValue desc, WarehouseOrderActivityArea, WarehouseOrderActivityArea desc, WarehouseOrderCreationRule, WarehouseOrderCreationRule desc, WarehouseOrderQueue, WarehouseOrderQueue desc, WarehouseActivityType, WarehouseActivityType desc, EWMConsolidationGroup, EWMConsolidationGroup desc, EWMWarehouseTaskPriority, EWMWarehouseTaskPriority desc, CreatedByUser, CreatedByUser desc, EWMRoute, EWMRoute desc, EWMWaveCategory, EWMWaveCategory desc, EWMCanceledWarehouseTask, EWMCanceledWarehouseTask desc, SerialNumberRequiredLevel, SerialNumberRequiredLevel desc, SAP__Messages, SAP__Messages desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseOrder, WhseTaskCrtnUTCDateTime, WhseTaskLastChgUTCDateTime, WhseTaskConfUTCDateTime, ConfirmedByUser, WhseTaskPlannedClosingDateTime, WhseTaskGoodsReceiptDateTime, WarehouseTaskStatus, WarehouseProcessType, WarehouseProcessCategory, IsHandlingUnitWarehouseTask, EWMHandlingUnitType, HandlingUnitTypeGroup, HomogeneousFullPalletPick, EWMPutAwayPhysInvtryPlnSts, EWMWhseTskLowStkChkPlnSts, EWMPutAwayPhysInvtryExecSts, EWMWhseTskLowStkChkExecSts, Product, Batch, BatchChangeIsNotAllowed, CountryOfOrigin, ShelfLifeExpirationDate, EWMStockType, EWMStockUsage, EWMStockOwner, EntitledToDisposeParty, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, ExecutingResource, WarehouseMovementsReason, ProductionOrder, EWMProductionSupplyArea, EWMDocumentCategory, EWMReferenceDocumentCategory, EWMWave, EWMWaveItem, EWMDelivery, EWMDeliveryItem, EWMProductionMaterialRequest, EWMProductionMaterialReqItem, PurchasingDocument, PurchasingDocumentItem, SalesDocument, SalesDocumentItem, BaseUnit, EWMBaseUnitISOCode, AlternativeUnit, EWMAlternativeUnitISOCode, TargetQuantityInBaseUnit, TargetQuantityInAltvUnit, ActualQuantityInBaseUnit, ActualQuantityInAltvUnit, DifferenceQuantityInBaseUnit, DifferenceQuantityInAltvUnit, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeight, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolume, Kanban, SourceStorageType, SourceStorageSection, SourceStorageBin, SourceResource, DestinationStorageType, DestinationStorageSection, DestinationStorageBin, DestinationResource, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingRlvnce, ActivityArea, SourceHandlingUnit, DestinationHandlingUnit, WrhsTaskSubsystemTransmn, WarehouseTaskExceptionCode, WhseTaskSortingSequenceValue, WarehouseOrderSequenceValue, WarehouseOrderActivityArea, WarehouseOrderCreationRule, WarehouseOrderQueue, WarehouseActivityType, EWMConsolidationGroup, EWMWarehouseTaskPriority, CreatedByUser, EWMRoute, EWMWaveCategory, EWMCanceledWarehouseTask, SerialNumberRequiredLevel, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder, _WarehouseTaskExceptionCode, _WarehouseTaskSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+    post:
+      summary: Add new entity to WarehouseTask
+      tags: [Warehouse Task]
+      requestBody:
+        required: true
+        description: New entity
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-create'}
+      responses:
+        '201':
+          description: Created entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entity from WarehouseTask by key
+      tags: [Warehouse Task]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseOrder, WhseTaskCrtnUTCDateTime, WhseTaskLastChgUTCDateTime, WhseTaskConfUTCDateTime, ConfirmedByUser, WhseTaskPlannedClosingDateTime, WhseTaskGoodsReceiptDateTime, WarehouseTaskStatus, WarehouseProcessType, WarehouseProcessCategory, IsHandlingUnitWarehouseTask, EWMHandlingUnitType, HandlingUnitTypeGroup, HomogeneousFullPalletPick, EWMPutAwayPhysInvtryPlnSts, EWMWhseTskLowStkChkPlnSts, EWMPutAwayPhysInvtryExecSts, EWMWhseTskLowStkChkExecSts, Product, Batch, BatchChangeIsNotAllowed, CountryOfOrigin, ShelfLifeExpirationDate, EWMStockType, EWMStockUsage, EWMStockOwner, EntitledToDisposeParty, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, ExecutingResource, WarehouseMovementsReason, ProductionOrder, EWMProductionSupplyArea, EWMDocumentCategory, EWMReferenceDocumentCategory, EWMWave, EWMWaveItem, EWMDelivery, EWMDeliveryItem, EWMProductionMaterialRequest, EWMProductionMaterialReqItem, PurchasingDocument, PurchasingDocumentItem, SalesDocument, SalesDocumentItem, BaseUnit, EWMBaseUnitISOCode, AlternativeUnit, EWMAlternativeUnitISOCode, TargetQuantityInBaseUnit, TargetQuantityInAltvUnit, ActualQuantityInBaseUnit, ActualQuantityInAltvUnit, DifferenceQuantityInBaseUnit, DifferenceQuantityInAltvUnit, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeight, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolume, Kanban, SourceStorageType, SourceStorageSection, SourceStorageBin, SourceResource, DestinationStorageType, DestinationStorageSection, DestinationStorageBin, DestinationResource, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingRlvnce, ActivityArea, SourceHandlingUnit, DestinationHandlingUnit, WrhsTaskSubsystemTransmn, WarehouseTaskExceptionCode, WhseTaskSortingSequenceValue, WarehouseOrderSequenceValue, WarehouseOrderActivityArea, WarehouseOrderCreationRule, WarehouseOrderQueue, WarehouseActivityType, EWMConsolidationGroup, EWMWarehouseTaskPriority, CreatedByUser, EWMRoute, EWMWaveCategory, EWMCanceledWarehouseTask, SerialNumberRequiredLevel, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder, _WarehouseTaskExceptionCode, _WarehouseTaskSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.AddSrlNmbrToTaskConf:
+    post:
+      summary: Invoke action AddSrlNmbrToTaskConf
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EWMSerialNumber: {type: string, maxLength: 30}
+                EWMSerialNumberIsForDiffQty: {type: boolean}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.ConfirmWarehouseTaskProduct:
+    post:
+      summary: Invoke action ConfirmWarehouseTaskProduct
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AlternativeUnit: {type: string, maxLength: 3}
+                ActualQuantityInAltvUnit:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 31
+                  x-sap-scale: 14
+                  multipleOf: 1.0E-14
+                  example: 0
+                DifferenceQuantityInAltvUnit:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 31
+                  x-sap-scale: 14
+                  multipleOf: 1.0E-14
+                  example: 0
+                WhseTaskExceptionCodeQtyDiff: {type: string, maxLength: 4}
+                DestinationStorageBin: {type: string, maxLength: 18}
+                WhseTaskExCodeDestStorageBin: {type: string, maxLength: 4}
+                SourceHandlingUnit: {type: string, maxLength: 20}
+                DestinationHandlingUnit: {type: string, maxLength: 20}
+                DestinationResource: {type: string, maxLength: 18}
+                EWMPutAwayPhysInvtryExecSts: {type: string, maxLength: 1}
+                EWMWhseTskLowStkChkExecSts: {type: string, maxLength: 1}
+                EWMWhseTaskLowStockCheckQty:
+                  anyOf:
+                  - {type: number}
+                  - {type: string}
+                  format: decimal
+                  x-sap-precision: 31
+                  x-sap-scale: 14
+                  multipleOf: 1.0E-14
+                  example: 0
+                EWMHandlingUnitIsNotWithdrawn: {type: boolean}
+                DirectWhseTaskConfIsAllowed: {type: boolean}
+                Batch: {type: string, maxLength: 10}
+                EWMWhseTskExcptnCodeChgBatch: {type: string, maxLength: 4}
+                ExternalWhseTaskIsProcessable: {type: boolean}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.CancelWarehouseTask:
+    post:
+      summary: Invoke action CancelWarehouseTask
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                DirectWhseTaskConfIsAllowed: {type: boolean}
+                ExternalWhseTaskIsProcessable: {type: boolean}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.ReassignToWarehouseOrder:
+    post:
+      summary: Invoke action ReassignToWarehouseOrder
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                WarehouseOrder: {type: string, maxLength: 10}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.ConfirmWarehouseTaskHndlgUnit:
+    post:
+      summary: Invoke action ConfirmWarehouseTaskHndlgUnit
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                DestinationStorageBin: {type: string, maxLength: 18}
+                WhseTaskExCodeDestStorageBin: {type: string, maxLength: 4}
+                DestinationResource: {type: string, maxLength: 18}
+                DirectWhseTaskConfIsAllowed: {type: boolean}
+                ExternalWhseTaskIsProcessable: {type: boolean}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/SAP__self.ConfirmWarehouseTaskExact:
+    post:
+      summary: Invoke action ConfirmWarehouseTaskExact
+      tags: [Warehouse Task]
+      parameters:
+      - name: EWMWarehouse
+        in: path
+        required: true
+        description: Warehouse Number/Warehouse Complex
+        schema: {type: string, maxLength: 4}
+        x-sap-object-node-type-reference: Warehouse
+      - name: WarehouseTask
+        in: path
+        required: true
+        description: Warehouse Task
+        schema: {type: string, maxLength: 12}
+      - name: WarehouseTaskItem
+        in: path
+        required: true
+        description: Warehouse Task Item
+        schema: {type: string, maxLength: 4}
+      requestBody:
+        description: Action parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                DirectWhseTaskConfIsAllowed: {type: boolean}
+                ExternalWhseTaskIsProcessable: {type: boolean}
+      responses:
+        '204': {description: Success}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/_WarehouseOrder:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get related _WarehouseOrder
+      tags: [Warehouse Task, Warehouse Order]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseOrder, WarehouseOrderStatus, WhseOrderCreationDateTime, WarehouseOrderStartDateTime, WhseOrderConfirmedDateTime, WhseOrderLastChgUTCDateTime, WhseOrderLatestStartDateTime, WarehouseOrderCreationRule, WhseOrderCreationRuleCategory, ActivityArea, Queue, Processor, ExecutingResource, EWMWave, WhseProcessTypeDocumentHdr, CreatedByUser, LastChangedByUser, ConfirmedByUser, WhseOrderForSplitWhseOrder, WarehouseOrderIsSplit, WarehouseOrderPlannedDuration, WhseOrderPlanDurationTimeUnit, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrderPickHndlgUnit, _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/_WarehouseTaskExceptionCode:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entities from related _WarehouseTaskExceptionCode
+      tags: [Warehouse Task, Warehouse Task Exception Code]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, WarehouseTaskExceptionCode, WarehouseTaskExceptionCode desc, BusinessContext, BusinessContext desc, BusinessContextExecutionStep, BusinessContextExecutionStep desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseTaskExceptionCode, BusinessContext, BusinessContextExecutionStep]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskExceptionCodeType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTask/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/_WarehouseTaskSerialNumber:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+      x-sap-object-node-type-reference: Warehouse
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    get:
+      summary: Get entities from related _WarehouseTaskSerialNumber
+      tags: [Warehouse Task, Warehouse Task Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, EWMSerialNumber, EWMSerialNumber desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskSerialNumber_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTaskExceptionCode:
+    get:
+      summary: Get entities from WarehouseTaskExceptionCode
+      tags: [Warehouse Task Exception Code]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, WarehouseTaskExceptionCode, WarehouseTaskExceptionCode desc, BusinessContext, BusinessContext desc, BusinessContextExecutionStep, BusinessContextExecutionStep desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseTaskExceptionCode, BusinessContext, BusinessContextExecutionStep]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskExceptionCodeType
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WarehouseTaskExceptionCode/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/{WarehouseTaskExceptionCode}/{BusinessContext}/{BusinessContextExecutionStep}
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTaskExceptionCode
+      in: path
+      required: true
+      description: Exception Code
+      schema: {type: string, maxLength: 4}
+    - name: BusinessContext
+      in: path
+      required: true
+      description: Business Context
+      schema: {type: string, maxLength: 3}
+    - name: BusinessContextExecutionStep
+      in: path
+      required: true
+      description: Execution Step in Business Context
+      schema: {type: string, maxLength: 2}
+    get:
+      summary: Get entity from WarehouseTaskExceptionCode by key
+      tags: [Warehouse Task Exception Code]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseTaskExceptionCode, BusinessContext, BusinessContextExecutionStep]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType'}
+        4XX: {$ref: '#/components/responses/error'}
+  ? /WarehouseTaskExceptionCode/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/{WarehouseTaskExceptionCode}/{BusinessContext}/{BusinessContextExecutionStep}/_WarehouseTask
+  : parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTaskExceptionCode
+      in: path
+      required: true
+      description: Exception Code
+      schema: {type: string, maxLength: 4}
+    - name: BusinessContext
+      in: path
+      required: true
+      description: Business Context
+      schema: {type: string, maxLength: 3}
+    - name: BusinessContextExecutionStep
+      in: path
+      required: true
+      description: Execution Step in Business Context
+      schema: {type: string, maxLength: 2}
+    get:
+      summary: Get related _WarehouseTask
+      tags: [Warehouse Task Exception Code, Warehouse Task]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseOrder, WhseTaskCrtnUTCDateTime, WhseTaskLastChgUTCDateTime, WhseTaskConfUTCDateTime, ConfirmedByUser, WhseTaskPlannedClosingDateTime, WhseTaskGoodsReceiptDateTime, WarehouseTaskStatus, WarehouseProcessType, WarehouseProcessCategory, IsHandlingUnitWarehouseTask, EWMHandlingUnitType, HandlingUnitTypeGroup, HomogeneousFullPalletPick, EWMPutAwayPhysInvtryPlnSts, EWMWhseTskLowStkChkPlnSts, EWMPutAwayPhysInvtryExecSts, EWMWhseTskLowStkChkExecSts, Product, Batch, BatchChangeIsNotAllowed, CountryOfOrigin, ShelfLifeExpirationDate, EWMStockType, EWMStockUsage, EWMStockOwner, EntitledToDisposeParty, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, ExecutingResource, WarehouseMovementsReason, ProductionOrder, EWMProductionSupplyArea, EWMDocumentCategory, EWMReferenceDocumentCategory, EWMWave, EWMWaveItem, EWMDelivery, EWMDeliveryItem, EWMProductionMaterialRequest, EWMProductionMaterialReqItem, PurchasingDocument, PurchasingDocumentItem, SalesDocument, SalesDocumentItem, BaseUnit, EWMBaseUnitISOCode, AlternativeUnit, EWMAlternativeUnitISOCode, TargetQuantityInBaseUnit, TargetQuantityInAltvUnit, ActualQuantityInBaseUnit, ActualQuantityInAltvUnit, DifferenceQuantityInBaseUnit, DifferenceQuantityInAltvUnit, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeight, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolume, Kanban, SourceStorageType, SourceStorageSection, SourceStorageBin, SourceResource, DestinationStorageType, DestinationStorageSection, DestinationStorageBin, DestinationResource, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingRlvnce, ActivityArea, SourceHandlingUnit, DestinationHandlingUnit, WrhsTaskSubsystemTransmn, WarehouseTaskExceptionCode, WhseTaskSortingSequenceValue, WarehouseOrderSequenceValue, WarehouseOrderActivityArea, WarehouseOrderCreationRule, WarehouseOrderQueue, WarehouseActivityType, EWMConsolidationGroup, EWMWarehouseTaskPriority, CreatedByUser, EWMRoute, EWMWaveCategory, EWMCanceledWarehouseTask, SerialNumberRequiredLevel, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder, _WarehouseTaskExceptionCode, _WarehouseTaskSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTaskSerialNumber:
+    get:
+      summary: Get entities from WarehouseTaskSerialNumber
+      tags: [Warehouse Task Serial Number]
+      parameters:
+      - {$ref: '#/components/parameters/top'}
+      - {$ref: '#/components/parameters/skip'}
+      - name: $filter
+        in: query
+        description: Filter items by property values, see [Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)
+        schema: {type: string}
+      - {$ref: '#/components/parameters/count'}
+      - name: $orderby
+        in: query
+        description: Order items by property values, see [Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, EWMWarehouse desc, WarehouseTask, WarehouseTask desc, WarehouseTaskItem, WarehouseTaskItem desc, EWMSerialNumber, EWMSerialNumber desc]
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entities
+          content:
+            application/json:
+              schema:
+                title: Collection of WarehouseTaskSerialNumber_Type
+                type: object
+                properties:
+                  '@odata.count': {$ref: '#/components/schemas/count'}
+                  value:
+                    type: array
+                    items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTaskSerialNumber/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/{EWMSerialNumber}:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    - name: EWMSerialNumber
+      in: path
+      required: true
+      description: 30 Characters
+      schema: {type: string, maxLength: 30}
+    get:
+      summary: Get entity from WarehouseTaskSerialNumber by key
+      tags: [Warehouse Task Serial Number]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, EWMSerialNumber]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseTask]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type'}
+        4XX: {$ref: '#/components/responses/error'}
+  /WarehouseTaskSerialNumber/{EWMWarehouse}/{WarehouseTask}/{WarehouseTaskItem}/{EWMSerialNumber}/_WarehouseTask:
+    parameters:
+    - name: EWMWarehouse
+      in: path
+      required: true
+      description: Warehouse Number/Warehouse Complex
+      schema: {type: string, maxLength: 4}
+    - name: WarehouseTask
+      in: path
+      required: true
+      description: Warehouse Task
+      schema: {type: string, maxLength: 12}
+    - name: WarehouseTaskItem
+      in: path
+      required: true
+      description: Warehouse Task Item
+      schema: {type: string, maxLength: 4}
+    - name: EWMSerialNumber
+      in: path
+      required: true
+      description: 30 Characters
+      schema: {type: string, maxLength: 30}
+    get:
+      summary: Get related _WarehouseTask
+      tags: [Warehouse Task Serial Number, Warehouse Task]
+      parameters:
+      - name: $select
+        in: query
+        description: Select properties to be returned, see [Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [EWMWarehouse, WarehouseTask, WarehouseTaskItem, WarehouseOrder, WhseTaskCrtnUTCDateTime, WhseTaskLastChgUTCDateTime, WhseTaskConfUTCDateTime, ConfirmedByUser, WhseTaskPlannedClosingDateTime, WhseTaskGoodsReceiptDateTime, WarehouseTaskStatus, WarehouseProcessType, WarehouseProcessCategory, IsHandlingUnitWarehouseTask, EWMHandlingUnitType, HandlingUnitTypeGroup, HomogeneousFullPalletPick, EWMPutAwayPhysInvtryPlnSts, EWMWhseTskLowStkChkPlnSts, EWMPutAwayPhysInvtryExecSts, EWMWhseTskLowStkChkExecSts, Product, Batch, BatchChangeIsNotAllowed, CountryOfOrigin, ShelfLifeExpirationDate, EWMStockType, EWMStockUsage, EWMStockOwner, EntitledToDisposeParty, WBSElementInternalID, WBSElementExternalID, SpecialStockIdfgSalesOrder, SpecialStockIdfgSalesOrderItem, ExecutingResource, WarehouseMovementsReason, ProductionOrder, EWMProductionSupplyArea, EWMDocumentCategory, EWMReferenceDocumentCategory, EWMWave, EWMWaveItem, EWMDelivery, EWMDeliveryItem, EWMProductionMaterialRequest, EWMProductionMaterialReqItem, PurchasingDocument, PurchasingDocumentItem, SalesDocument, SalesDocumentItem, BaseUnit, EWMBaseUnitISOCode, AlternativeUnit, EWMAlternativeUnitISOCode, TargetQuantityInBaseUnit, TargetQuantityInAltvUnit, ActualQuantityInBaseUnit, ActualQuantityInAltvUnit, DifferenceQuantityInBaseUnit, DifferenceQuantityInAltvUnit, WhseTaskNetWeightUnitOfMeasure, WhseTaskNetWeight, WhseTaskNetVolumeUnitOfMeasure, WhseTaskNetVolume, Kanban, SourceStorageType, SourceStorageSection, SourceStorageBin, SourceResource, DestinationStorageType, DestinationStorageSection, DestinationStorageBin, DestinationResource, WhseTaskTwoStepPickingType, WhseTaskTwoStepPickingRlvnce, ActivityArea, SourceHandlingUnit, DestinationHandlingUnit, WrhsTaskSubsystemTransmn, WarehouseTaskExceptionCode, WhseTaskSortingSequenceValue, WarehouseOrderSequenceValue, WarehouseOrderActivityArea, WarehouseOrderCreationRule, WarehouseOrderQueue, WarehouseActivityType, EWMConsolidationGroup, EWMWarehouseTaskPriority, CreatedByUser, EWMRoute, EWMWaveCategory, EWMCanceledWarehouseTask, SerialNumberRequiredLevel, SAP__Messages]
+      - name: $expand
+        in: query
+        description: Expand related entities, see [Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)
+        explode: false
+        schema:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: ['*', _WarehouseOrder, _WarehouseTaskExceptionCode, _WarehouseTaskSerialNumber]
+      responses:
+        '200':
+          description: Retrieved entity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+        4XX: {$ref: '#/components/responses/error'}
+  /$batch:
+    post:
+      summary: Send a group of requests
+      description: |-
+        Group multiple requests into a single request payload, see [Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests).
+
+        *Please note that "Try it out" is not supported for this request.*
+      tags: [Batch Requests]
+      requestBody:
+        required: true
+        description: Batch request
+        content:
+          multipart/mixed;boundary=request-separator:
+            schema: {type: string}
+            example: |-
+              --request-separator
+              Content-Type: application/http
+              Content-Transfer-Encoding: binary
+
+              GET WarehouseOrder HTTP/1.1
+              Accept: application/json
+
+
+              --request-separator--
+      responses:
+        '200':
+          description: Batch response
+          content:
+            multipart/mixed:
+              schema: {type: string}
+              example: |-
+                --response-separator
+                Content-Type: application/http
+
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {...}
+                --response-separator--
+        4XX: {$ref: '#/components/responses/error'}
+components:
+  schemas:
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit}
+        PackagingMaterial: {type: string, maxLength: 40, title: Product}
+        EWMWhseOrderNmbrOfHndlgUnits: {type: string, maxLength: 3, title: HU Identification, description: Identification of a Handling Unit in a Warehouse Order}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message'}
+        _WarehouseOrder: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+      title: Warehouse Order Pick Handling Unit
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type-create:
+      type: object
+      properties:
+        HandlingUnitExternalID: {type: string, maxLength: 20, title: Handling Unit}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-create'}
+        _WarehouseOrder: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType-create'}
+      required: [HandlingUnitExternalID]
+      title: Warehouse Order Pick Handling Unit (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type-update:
+      type: object
+      properties:
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-update'}
+      title: Warehouse Order Pick Handling Unit (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+        WarehouseTaskItem: {type: string, maxLength: 4, title: WT Item, description: Warehouse Task Item}
+        WarehouseOrder: {type: string, maxLength: 10, x-sap-object-node-type-reference: WarehouseOrder, title: Warehouse Order, description: Warehouse Order Number}
+        WhseTaskCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Time}
+        WhseTaskLastChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        WhseTaskConfUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        ConfirmedByUser: {type: string, maxLength: 12}
+        WhseTaskPlannedClosingDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Planned Closing Time, description: Planned Closing Date/Time}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        WarehouseTaskStatus: {type: string, maxLength: 1, title: WT Status, description: Warehouse Task Status}
+        WarehouseProcessType: {type: string, maxLength: 4, title: Whse Process Type, description: Warehouse Process Type}
+        WarehouseProcessCategory: {type: string, maxLength: 1, title: Whse Proc. Category, description: Warehouse Process Category}
+        IsHandlingUnitWarehouseTask: {type: boolean, title: HU Warehouse Task, description: Handling Unit Warehouse Task}
+        EWMHandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        HandlingUnitTypeGroup: {type: string, maxLength: 4, title: HU Type Group, description: Handling Unit Type Group}
+        HomogeneousFullPalletPick: {type: string, maxLength: 1, title: Removal of Whole HU, description: 'Stock Removal of Whole, Homogenous Handling Unit'}
+        EWMPutAwayPhysInvtryPlnSts: {type: string, maxLength: 1, title: Ptwy PI Plan., description: Putaway Physical Inventory Planned}
+        EWMWhseTskLowStkChkPlnSts: {type: string, maxLength: 1, title: L.StkChk Plan., description: Low Stock Check Planned}
+        EWMPutAwayPhysInvtryExecSts: {type: string, maxLength: 1, title: Ptwy PI Done, description: Inventory on Putaway Performed}
+        EWMWhseTskLowStkChkExecSts: {type: string, maxLength: 1, title: L.StkChk Done, description: Low Stock Check Performed}
+        Product: {type: string, maxLength: 40, title: Product}
+        Batch: {type: string, maxLength: 10, title: Batch}
+        BatchChangeIsNotAllowed: {type: boolean, title: Change Batch, description: Changing the Batch is not Allowed}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockType: {type: string, maxLength: 2, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Character Field with Length 10}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6}
+        ExecutingResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Resource, description: Executing Resource (Means of Transport or User)}
+        WarehouseMovementsReason: {type: string, maxLength: 4, title: Movement Reason, description: Reason for Movements in the Warehouse}
+        ProductionOrder: {type: string, maxLength: 12, title: Manufacturing Order}
+        EWMProductionSupplyArea: {type: string, maxLength: 15, title: Supply Area, description: Production Supply Area}
+        EWMDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMReferenceDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        EWMWaveItem: {type: string, maxLength: 6, title: Wave Item}
+        EWMDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMDeliveryItem: {type: string, maxLength: 10, title: Item Number}
+        EWMProductionMaterialRequest: {type: string, maxLength: 35, title: Document Number}
+        EWMProductionMaterialReqItem: {type: string, maxLength: 10, title: Item Number}
+        PurchasingDocument: {type: string, maxLength: 10, title: Purchase Order, description: Purchase Order Number}
+        PurchasingDocumentItem: {type: string, maxLength: 5, title: Purchase Order Item, description: Item Number of Purchase Order}
+        SalesDocument: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SalesDocumentItem: {type: string, maxLength: 6, title: Sales Document Item}
+        BaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        AlternativeUnit: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        EWMAlternativeUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        TargetQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Base
+          description: Target Quantity in Base Unit of Measure
+        TargetQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Altn
+          description: Target Quantity in Alternative Unit of Measure
+        ActualQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        ActualQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        WhseTaskNetWeightUnitOfMeasure: {type: string, maxLength: 3, title: Weight Unit}
+        WhseTaskNetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading or Net Weight
+        WhseTaskNetVolumeUnitOfMeasure: {type: string, maxLength: 3, title: Volume Unit}
+        WhseTaskNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading or Net Volume
+        Kanban: {type: string, maxLength: 10}
+        SourceStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Source Storage Type}
+        SourceStorageSection: {type: string, maxLength: 4, title: Source Stor. Section, description: Source Storage Section}
+        SourceStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Source Storage Bin}
+        SourceResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Source Resource, description: Source Resource (Means of Transport or User)}
+        DestinationStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Dest. Storage Type, description: Destination Storage Type}
+        DestinationStorageSection: {type: string, maxLength: 4, title: Dest. Stor. Section, description: Destination Storage Section}
+        DestinationStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Destination Bin, description: Destination Storage Bin}
+        DestinationResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Dest.Resource, description: Destination Resource (Means of Transport or User)}
+        WhseTaskTwoStepPickingType: {type: string, maxLength: 1, title: Warehouse Task Type, description: Warehouse Task Type Within Two-Step Picking}
+        WhseTaskTwoStepPickingRlvnce: {type: string, maxLength: 1, title: Two-Step Picking, description: Relevance for Two-Step Picking}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        SourceHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Source Handling Unit}
+        DestinationHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Dest. HU, description: Destination Handling Unit}
+        WrhsTaskSubsystemTransmn: {type: string, maxLength: 1, title: WT to Subsystem, description: 'Indicator: Pass on Warehouse Task to Subsystem'}
+        WarehouseTaskExceptionCode: {type: string, maxLength: 4}
+        WhseTaskSortingSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          multipleOf: 1
+          minimum: -9999999999
+          maximum: 9999999999
+          example: 0
+          title: Sort Sequence
+        WarehouseOrderSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: double
+          example: 3.14
+          title: Sequence
+          description: Internal Sequence of Warehouse Order
+        WarehouseOrderActivityArea: {type: string, maxLength: 4, title: WO Activity Area, description: Warehouse Order Activity Area}
+        WarehouseOrderCreationRule: {type: string, maxLength: 4, title: WO Creation Rule, description: Warehouse Order Creation Rule}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        WarehouseActivityType: {type: string, maxLength: 4, title: Activity}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        EWMWarehouseTaskPriority: {type: integer, format: uint8, title: Priority}
+        CreatedByUser: {type: string, maxLength: 12, title: Created By}
+        EWMRoute: {type: string, maxLength: 10, title: Route, description: Route Name (Identification)}
+        EWMWaveCategory: {type: string, maxLength: 2, title: Wave Category}
+        EWMCanceledWarehouseTask: {type: string, maxLength: 12}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message'}
+        _WarehouseOrder: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType'}
+        _WarehouseTaskExceptionCode:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType'}
+        _WarehouseTaskSerialNumber:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type'}
+      title: Warehouse Task
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-create:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseOrder: {type: string, maxLength: 10, x-sap-object-node-type-reference: WarehouseOrder, title: Warehouse Order, description: Warehouse Order Number}
+        WhseTaskCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Time}
+        WhseTaskLastChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        WhseTaskConfUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        ConfirmedByUser: {type: string, maxLength: 12}
+        WhseTaskPlannedClosingDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Planned Closing Time, description: Planned Closing Date/Time}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        WarehouseTaskStatus: {type: string, maxLength: 1, title: WT Status, description: Warehouse Task Status}
+        WarehouseProcessType: {type: string, maxLength: 4, title: Whse Process Type, description: Warehouse Process Type}
+        WarehouseProcessCategory: {type: string, maxLength: 1, title: Whse Proc. Category, description: Warehouse Process Category}
+        IsHandlingUnitWarehouseTask: {type: boolean, title: HU Warehouse Task, description: Handling Unit Warehouse Task}
+        EWMHandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        HandlingUnitTypeGroup: {type: string, maxLength: 4, title: HU Type Group, description: Handling Unit Type Group}
+        HomogeneousFullPalletPick: {type: string, maxLength: 1, title: Removal of Whole HU, description: 'Stock Removal of Whole, Homogenous Handling Unit'}
+        EWMPutAwayPhysInvtryPlnSts: {type: string, maxLength: 1, title: Ptwy PI Plan., description: Putaway Physical Inventory Planned}
+        EWMWhseTskLowStkChkPlnSts: {type: string, maxLength: 1, title: L.StkChk Plan., description: Low Stock Check Planned}
+        EWMPutAwayPhysInvtryExecSts: {type: string, maxLength: 1, title: Ptwy PI Done, description: Inventory on Putaway Performed}
+        EWMWhseTskLowStkChkExecSts: {type: string, maxLength: 1, title: L.StkChk Done, description: Low Stock Check Performed}
+        Product: {type: string, maxLength: 40, title: Product}
+        Batch: {type: string, maxLength: 10, title: Batch}
+        BatchChangeIsNotAllowed: {type: boolean, title: Change Batch, description: Changing the Batch is not Allowed}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockType: {type: string, maxLength: 2, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Character Field with Length 10}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6}
+        ExecutingResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Resource, description: Executing Resource (Means of Transport or User)}
+        WarehouseMovementsReason: {type: string, maxLength: 4, title: Movement Reason, description: Reason for Movements in the Warehouse}
+        ProductionOrder: {type: string, maxLength: 12, title: Manufacturing Order}
+        EWMProductionSupplyArea: {type: string, maxLength: 15, title: Supply Area, description: Production Supply Area}
+        EWMDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMReferenceDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        EWMWaveItem: {type: string, maxLength: 6, title: Wave Item}
+        EWMDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMDeliveryItem: {type: string, maxLength: 10, title: Item Number}
+        EWMProductionMaterialRequest: {type: string, maxLength: 35, title: Document Number}
+        EWMProductionMaterialReqItem: {type: string, maxLength: 10, title: Item Number}
+        PurchasingDocument: {type: string, maxLength: 10, title: Purchase Order, description: Purchase Order Number}
+        PurchasingDocumentItem: {type: string, maxLength: 5, title: Purchase Order Item, description: Item Number of Purchase Order}
+        SalesDocument: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SalesDocumentItem: {type: string, maxLength: 6, title: Sales Document Item}
+        BaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        AlternativeUnit: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        EWMAlternativeUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        TargetQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Base
+          description: Target Quantity in Base Unit of Measure
+        TargetQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Altn
+          description: Target Quantity in Alternative Unit of Measure
+        ActualQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        ActualQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        WhseTaskNetWeightUnitOfMeasure: {type: string, maxLength: 3, title: Weight Unit}
+        WhseTaskNetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading or Net Weight
+        WhseTaskNetVolumeUnitOfMeasure: {type: string, maxLength: 3, title: Volume Unit}
+        WhseTaskNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading or Net Volume
+        Kanban: {type: string, maxLength: 10}
+        SourceStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Source Storage Type}
+        SourceStorageSection: {type: string, maxLength: 4, title: Source Stor. Section, description: Source Storage Section}
+        SourceStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Source Storage Bin}
+        SourceResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Source Resource, description: Source Resource (Means of Transport or User)}
+        DestinationStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Dest. Storage Type, description: Destination Storage Type}
+        DestinationStorageSection: {type: string, maxLength: 4, title: Dest. Stor. Section, description: Destination Storage Section}
+        DestinationStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Destination Bin, description: Destination Storage Bin}
+        DestinationResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Dest.Resource, description: Destination Resource (Means of Transport or User)}
+        WhseTaskTwoStepPickingType: {type: string, maxLength: 1, title: Warehouse Task Type, description: Warehouse Task Type Within Two-Step Picking}
+        WhseTaskTwoStepPickingRlvnce: {type: string, maxLength: 1, title: Two-Step Picking, description: Relevance for Two-Step Picking}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        SourceHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Source Handling Unit}
+        DestinationHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Dest. HU, description: Destination Handling Unit}
+        WrhsTaskSubsystemTransmn: {type: string, maxLength: 1, title: WT to Subsystem, description: 'Indicator: Pass on Warehouse Task to Subsystem'}
+        WarehouseTaskExceptionCode: {type: string, maxLength: 4}
+        WhseTaskSortingSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          multipleOf: 1
+          minimum: -9999999999
+          maximum: 9999999999
+          example: 0
+          title: Sort Sequence
+        WarehouseOrderSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: double
+          example: 3.14
+          title: Sequence
+          description: Internal Sequence of Warehouse Order
+        WarehouseOrderActivityArea: {type: string, maxLength: 4, title: WO Activity Area, description: Warehouse Order Activity Area}
+        WarehouseOrderCreationRule: {type: string, maxLength: 4, title: WO Creation Rule, description: Warehouse Order Creation Rule}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        WarehouseActivityType: {type: string, maxLength: 4, title: Activity}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        EWMWarehouseTaskPriority: {type: integer, format: uint8, title: Priority}
+        CreatedByUser: {type: string, maxLength: 12, title: Created By}
+        EWMRoute: {type: string, maxLength: 10, title: Route, description: Route Name (Identification)}
+        EWMWaveCategory: {type: string, maxLength: 2, title: Wave Category}
+        EWMCanceledWarehouseTask: {type: string, maxLength: 12}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-create'}
+        _WarehouseOrder: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType-create'}
+        _WarehouseTaskExceptionCode:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType-create'}
+        _WarehouseTaskSerialNumber:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type-create'}
+      required: [EWMWarehouse]
+      title: Warehouse Task (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-update:
+      type: object
+      properties:
+        WhseTaskCrtnUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Time}
+        WhseTaskLastChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        WhseTaskConfUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        ConfirmedByUser: {type: string, maxLength: 12}
+        WhseTaskPlannedClosingDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Planned Closing Time, description: Planned Closing Date/Time}
+        WhseTaskGoodsReceiptDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: GR Date, description: Date and Time of Goods Receipt}
+        WarehouseTaskStatus: {type: string, maxLength: 1, title: WT Status, description: Warehouse Task Status}
+        WarehouseProcessType: {type: string, maxLength: 4, title: Whse Process Type, description: Warehouse Process Type}
+        WarehouseProcessCategory: {type: string, maxLength: 1, title: Whse Proc. Category, description: Warehouse Process Category}
+        IsHandlingUnitWarehouseTask: {type: boolean, title: HU Warehouse Task, description: Handling Unit Warehouse Task}
+        EWMHandlingUnitType: {type: string, maxLength: 4, title: Handling Unit Type}
+        HandlingUnitTypeGroup: {type: string, maxLength: 4, title: HU Type Group, description: Handling Unit Type Group}
+        HomogeneousFullPalletPick: {type: string, maxLength: 1, title: Removal of Whole HU, description: 'Stock Removal of Whole, Homogenous Handling Unit'}
+        EWMPutAwayPhysInvtryPlnSts: {type: string, maxLength: 1, title: Ptwy PI Plan., description: Putaway Physical Inventory Planned}
+        EWMWhseTskLowStkChkPlnSts: {type: string, maxLength: 1, title: L.StkChk Plan., description: Low Stock Check Planned}
+        EWMPutAwayPhysInvtryExecSts: {type: string, maxLength: 1, title: Ptwy PI Done, description: Inventory on Putaway Performed}
+        EWMWhseTskLowStkChkExecSts: {type: string, maxLength: 1, title: L.StkChk Done, description: Low Stock Check Performed}
+        Product: {type: string, maxLength: 40, title: Product}
+        Batch: {type: string, maxLength: 10, title: Batch}
+        BatchChangeIsNotAllowed: {type: boolean, title: Change Batch, description: Changing the Batch is not Allowed}
+        CountryOfOrigin: {type: string, maxLength: 3, title: Ctry/Reg. of Origin, description: Country/Region of Origin}
+        ShelfLifeExpirationDate: {type: string, nullable: true, format: date, example: '2017-04-13', title: Expiration Date, description: Shelf Life Expiration Date}
+        EWMStockType: {type: string, maxLength: 2, title: Stock Type}
+        EWMStockUsage: {type: string, maxLength: 1, title: Usage, description: Stock Usage}
+        EWMStockOwner: {type: string, maxLength: 10, title: Character Field with Length 10}
+        EntitledToDisposeParty: {type: string, maxLength: 10, title: Disposal Party, description: Party Entitled to Dispose}
+        WBSElementInternalID: {type: string, maxLength: 8, title: WBS Internal ID, description: WBS Element}
+        WBSElementExternalID: {type: string, maxLength: 24, title: WBS Element, description: Work Breakdown Structure Element (WBS Element) Edited}
+        SpecialStockIdfgSalesOrder: {type: string, maxLength: 10}
+        SpecialStockIdfgSalesOrderItem: {type: string, maxLength: 6}
+        ExecutingResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Resource, description: Executing Resource (Means of Transport or User)}
+        WarehouseMovementsReason: {type: string, maxLength: 4, title: Movement Reason, description: Reason for Movements in the Warehouse}
+        ProductionOrder: {type: string, maxLength: 12, title: Manufacturing Order}
+        EWMProductionSupplyArea: {type: string, maxLength: 15, title: Supply Area, description: Production Supply Area}
+        EWMDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMReferenceDocumentCategory: {type: string, maxLength: 3, title: Document Category, description: Doc. Category for Doc. Reference and Doc.-Related Stock}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        EWMWaveItem: {type: string, maxLength: 6, title: Wave Item}
+        EWMDelivery: {type: string, maxLength: 35, title: Document Number}
+        EWMDeliveryItem: {type: string, maxLength: 10, title: Item Number}
+        EWMProductionMaterialRequest: {type: string, maxLength: 35, title: Document Number}
+        EWMProductionMaterialReqItem: {type: string, maxLength: 10, title: Item Number}
+        PurchasingDocument: {type: string, maxLength: 10, title: Purchase Order, description: Purchase Order Number}
+        PurchasingDocumentItem: {type: string, maxLength: 5, title: Purchase Order Item, description: Item Number of Purchase Order}
+        SalesDocument: {type: string, maxLength: 10, title: SD Document, description: Sales and Distribution Document Number}
+        SalesDocumentItem: {type: string, maxLength: 6, title: Sales Document Item}
+        BaseUnit: {type: string, maxLength: 3, title: Base Unit of Measure}
+        EWMBaseUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        AlternativeUnit: {type: string, maxLength: 3, title: Alt. Unit of Measure, description: Alternative Unit of Measure for Stockkeeping Unit}
+        EWMAlternativeUnitISOCode: {type: string, maxLength: 3, title: ISO Code, description: ISO Code for Unit of Measurement}
+        TargetQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Base
+          description: Target Quantity in Base Unit of Measure
+        TargetQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+          title: Target Quantity Altn
+          description: Target Quantity in Alternative Unit of Measure
+        ActualQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        ActualQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInBaseUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        DifferenceQuantityInAltvUnit:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 31
+          x-sap-scale: 14
+          multipleOf: 1.0E-14
+          example: 0
+        WhseTaskNetWeightUnitOfMeasure: {type: string, maxLength: 3, title: Weight Unit}
+        WhseTaskNetWeight:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Weight
+          description: Loading or Net Weight
+        WhseTaskNetVolumeUnitOfMeasure: {type: string, maxLength: 3, title: Volume Unit}
+        WhseTaskNetVolume:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Loading Volume
+          description: Loading or Net Volume
+        Kanban: {type: string, maxLength: 10}
+        SourceStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Source Storage Type}
+        SourceStorageSection: {type: string, maxLength: 4, title: Source Stor. Section, description: Source Storage Section}
+        SourceStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Source Storage Bin}
+        SourceResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Source Resource, description: Source Resource (Means of Transport or User)}
+        DestinationStorageType: {type: string, maxLength: 4, x-sap-object-node-type-reference: WarehouseStorageType, title: Dest. Storage Type, description: Destination Storage Type}
+        DestinationStorageSection: {type: string, maxLength: 4, title: Dest. Stor. Section, description: Destination Storage Section}
+        DestinationStorageBin: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseStorageBin, title: Destination Bin, description: Destination Storage Bin}
+        DestinationResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Dest.Resource, description: Destination Resource (Means of Transport or User)}
+        WhseTaskTwoStepPickingType: {type: string, maxLength: 1, title: Warehouse Task Type, description: Warehouse Task Type Within Two-Step Picking}
+        WhseTaskTwoStepPickingRlvnce: {type: string, maxLength: 1, title: Two-Step Picking, description: Relevance for Two-Step Picking}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        SourceHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Source Handling Unit}
+        DestinationHandlingUnit: {type: string, maxLength: 20, x-sap-object-node-type-reference: HandlingUnit, title: Dest. HU, description: Destination Handling Unit}
+        WrhsTaskSubsystemTransmn: {type: string, maxLength: 1, title: WT to Subsystem, description: 'Indicator: Pass on Warehouse Task to Subsystem'}
+        WarehouseTaskExceptionCode: {type: string, maxLength: 4}
+        WhseTaskSortingSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 10
+          multipleOf: 1
+          minimum: -9999999999
+          maximum: 9999999999
+          example: 0
+          title: Sort Sequence
+        WarehouseOrderSequenceValue:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: double
+          example: 3.14
+          title: Sequence
+          description: Internal Sequence of Warehouse Order
+        WarehouseOrderActivityArea: {type: string, maxLength: 4, title: WO Activity Area, description: Warehouse Order Activity Area}
+        WarehouseOrderCreationRule: {type: string, maxLength: 4, title: WO Creation Rule, description: Warehouse Order Creation Rule}
+        WarehouseOrderQueue: {type: string, maxLength: 10, title: Queue}
+        WarehouseActivityType: {type: string, maxLength: 4, title: Activity}
+        EWMConsolidationGroup: {type: string, maxLength: 10, title: Consolidation Group}
+        EWMWarehouseTaskPriority: {type: integer, format: uint8, title: Priority}
+        CreatedByUser: {type: string, maxLength: 12, title: Created By}
+        EWMRoute: {type: string, maxLength: 10, title: Route, description: Route Name (Identification)}
+        EWMWaveCategory: {type: string, maxLength: 2, title: Wave Category}
+        EWMCanceledWarehouseTask: {type: string, maxLength: 12}
+        SerialNumberRequiredLevel: {type: string, maxLength: 1, title: Serial No. Requiremt, description: Serial Number Requirement}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-update'}
+      title: Warehouse Task (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+        WarehouseTaskItem: {type: string, maxLength: 4, title: WT Item, description: Warehouse Task Item}
+        EWMSerialNumber: {type: string, maxLength: 30, title: 30 Characters}
+        _WarehouseTask: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+      title: Warehouse Task Serial Number
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type-create:
+      type: object
+      properties:
+        _WarehouseTask: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-create'}
+      title: Warehouse Task Serial Number (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskSerialNumber_Type-update: {type: object, title: Warehouse Task Serial Number (for update)}
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, x-sap-object-node-type-reference: Warehouse, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+        WarehouseOrderStatus: {type: string, maxLength: 1, title: Whse Order Status, description: Warehouse Order Status}
+        WhseOrderCreationDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Creation Time}
+        WarehouseOrderStartDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Start Time}
+        WhseOrderConfirmedDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Confirmation Time, description: Time of Confirmation}
+        WhseOrderLastChgUTCDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Short Time Stamp, description: UTC Time Stamp in Short Form (YYYYMMDDhhmmss)}
+        WhseOrderLatestStartDateTime: {type: string, nullable: true, format: date-time, example: '2017-04-13T15:51:04Z', title: Latest Starting Date, description: Latest Starting Date (LSD)}
+        WarehouseOrderCreationRule: {type: string, maxLength: 4, title: WO Creation Rule, description: Warehouse Order Creation Rule}
+        WhseOrderCreationRuleCategory: {type: string, maxLength: 1, title: WO Creation Rule Cat, description: Category of Warehouse Order Creation Rule}
+        ActivityArea: {type: string, maxLength: 4, title: Activity Area}
+        Queue: {type: string, maxLength: 10, title: Queue}
+        Processor: {type: string, maxLength: 12, title: Processor}
+        ExecutingResource: {type: string, maxLength: 18, x-sap-object-node-type-reference: WarehouseResource, title: Resource, description: Resource (Means of Transportation or User)}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        WhseProcessTypeDocumentHdr: {type: string, maxLength: 4, title: Hdr WhsePT, description: Document Header Warehouse Process Type}
+        CreatedByUser: {type: string, maxLength: 12, title: Created By}
+        LastChangedByUser: {type: string, maxLength: 12, title: Changed By}
+        ConfirmedByUser: {type: string, maxLength: 12, title: Confirmed By}
+        WhseOrderForSplitWhseOrder: {type: string, maxLength: 10, title: Split WO, description: Warehouse Order Number of WO That Was Split}
+        WarehouseOrderIsSplit: {type: boolean, title: Split, description: Warehouse Order Was Split}
+        WarehouseOrderPlannedDuration:
+          anyOf:
+          - {type: number}
+          - {type: string}
+          format: decimal
+          x-sap-precision: 15
+          x-sap-scale: 3
+          multipleOf: 0.001
+          minimum: -9.99999999999999E11
+          maximum: 9.99999999999999E11
+          example: 0
+          title: Plnd Execution Time
+          description: Planned Execution Time of Warehouse Order
+        WhseOrderPlanDurationTimeUnit: {type: string, maxLength: 3, title: Time Unit, description: 'Warehouse Order: Time Unit'}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message'}
+        _WarehouseOrderPickHndlgUnit:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type'}
+        _WarehouseTask:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+      title: Warehouse Order
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType-create:
+      type: object
+      properties:
+        Queue: {type: string, maxLength: 10, title: Queue}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-create'}
+        _WarehouseOrderPickHndlgUnit:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderPickHndlgUnit_Type-create'}
+        _WarehouseTask:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-create'}
+      title: Warehouse Order (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseOrderType-update:
+      type: object
+      properties:
+        Queue: {type: string, maxLength: 10, title: Queue}
+        EWMWave: {type: string, maxLength: 10, title: Wave}
+        SAP__Messages:
+          type: array
+          items: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-update'}
+      title: Warehouse Order (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType:
+      type: object
+      properties:
+        EWMWarehouse: {type: string, maxLength: 4, title: Warehouse Number, description: Warehouse Number/Warehouse Complex}
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+        WarehouseTaskItem: {type: string, maxLength: 4, title: WT Item, description: Warehouse Task Item}
+        WarehouseTaskExceptionCode: {type: string, maxLength: 4, title: Exception Code}
+        BusinessContext: {type: string, maxLength: 3, title: Business Context}
+        BusinessContextExecutionStep: {type: string, maxLength: 2, title: Exec. Step, description: Execution Step in Business Context}
+        _WarehouseTask: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType'}
+      title: Warehouse Task Exception Code
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType-create:
+      type: object
+      properties:
+        _WarehouseTask: {$ref: '#/components/schemas/com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskType-create'}
+      title: Warehouse Task Exception Code (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.WarehouseTaskExceptionCodeType-update: {type: object, title: Warehouse Task Exception Code (for update)}
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderMergeChildP:
+      type: object
+      properties:
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+      title: D_WhseOrderMergeChildP
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderMergeChildP-create:
+      type: object
+      properties:
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+      title: D_WhseOrderMergeChildP (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderMergeChildP-update:
+      type: object
+      properties:
+        WarehouseOrder: {type: string, maxLength: 10, title: Warehouse Order, description: Warehouse Order Number}
+      title: D_WhseOrderMergeChildP (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderSplitChildP:
+      type: object
+      properties:
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+      title: D_WhseOrderSplitChildP
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderSplitChildP-create:
+      type: object
+      properties:
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+      title: D_WhseOrderSplitChildP (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.D_WhseOrderSplitChildP-update:
+      type: object
+      properties:
+        WarehouseTask: {type: string, maxLength: 12, title: Warehouse Task}
+      title: D_WhseOrderSplitChildP (for update)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-create:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for create)
+    com.sap.gateway.srvd_a2x.api_warehouse_order_task_2.v0001.SAP__Message-update:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        target: {type: string, nullable: true}
+        additionalTargets:
+          type: array
+          items: {type: string}
+        transition: {type: boolean}
+        numericSeverity: {type: integer, format: uint8}
+        longtextUrl: {type: string, nullable: true}
+      title: SAP__Message (for update)
+    count:
+      anyOf:
+      - {type: number}
+      - {type: string}
+      description: The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option.
+    error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            target: {type: string}
+            details:
+              type: array
+              items:
+                type: object
+                required: [code, message]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  target: {type: string}
+            innererror: {type: object, description: The structure of this object is service-specific}
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Show only the first n items, see [Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)
+      schema: {type: integer, minimum: 0}
+      example: 50
+    skip:
+      name: $skip
+      in: query
+      description: Skip the first n items, see [Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)
+      schema: {type: integer, minimum: 0}
+    count:
+      name: $count
+      in: query
+      description: Include count of items, see [Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)
+      schema: {type: boolean}
+    search:
+      name: $search
+      in: query
+      description: Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)
+      schema: {type: string}
+  responses:
+    error:
+      description: Error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/error'}
+  securitySchemes:
+    OAuth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          scopes: {'OV4:API_WAREHOUSE_ORDER_TASK_2': ''}
+          refreshUrl: https://{host}:{port}
+          authorizationUrl: https://{host}:{port}
+          tokenUrl: https://{host}:{port}
+    BasicAuth: {type: http, scheme: basic}
+security:
+- OAuth2Auth: ['OV4:API_WAREHOUSE_ORDER_TASK_2']
+- BasicAuth: []

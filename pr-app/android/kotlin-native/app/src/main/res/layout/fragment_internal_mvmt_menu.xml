@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8FAFC">
+
+    <!-- Header layout matching Dashboard/Putaway style -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="72dp" android:background="#1E293B" android:elevation="4dp" app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_revert" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Internal Movements" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" android:layout_marginStart="16dp" />
+
+        <ImageView android:id="@+id/btn_home" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_compass" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WAREHOUSE TASKS" android:textSize="12sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="12dp" android:layout_marginStart="4dp"/>
+
+            <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:useDefaultMargins="false" android:alignmentMode="alignBounds" android:layout_marginBottom="24dp">
+
+                <LinearLayout android:id="@+id/card_adhoc_task_create" android:layout_width="0dp" android:layout_height="120dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true" android:elevation="2dp">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:src="@android:drawable/ic_menu_edit" app:tint="#3B82F6" android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Adhoc Task" android:textStyle="bold" android:textColor="#334155" android:textSize="14sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_adhoc_task_confirm" android:layout_width="0dp" android:layout_height="120dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true" android:elevation="2dp">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:src="@android:drawable/ic_menu_agenda" app:tint="#10B981" android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Confirm Task" android:textStyle="bold" android:textColor="#334155" android:textSize="14sp" android:gravity="center"/>
+                </LinearLayout>
+            </GridLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PHYSICAL INVENTORY" android:textSize="12sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="12dp" android:layout_marginStart="4dp"/>
+
+            <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:useDefaultMargins="false" android:alignmentMode="alignBounds" android:layout_marginBottom="24dp">
+
+                <LinearLayout android:id="@+id/card_pi_count" android:layout_width="0dp" android:layout_height="120dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true" android:elevation="2dp">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:src="@android:drawable/ic_menu_sort_by_size" app:tint="#8B5CF6" android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Physical Count" android:textStyle="bold" android:textColor="#334155" android:textSize="14sp" android:gravity="center"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/card_pi_adhoc_create" android:layout_width="0dp" android:layout_height="120dp" android:layout_columnWeight="1" android:layout_margin="8dp" android:background="@drawable/bg_menu_card" android:gravity="center" android:orientation="vertical" android:clickable="true" android:focusable="true" android:elevation="2dp">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:src="@android:drawable/ic_menu_add" app:tint="#F59E0B" android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Adhoc PI Create" android:textStyle="bold" android:textColor="#334155" android:textSize="14sp" android:gravity="center"/>
+                </LinearLayout>
+            </GridLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

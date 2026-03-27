@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:background="@drawable/bg_menu_card" android:padding="16dp" android:elevation="0dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+
+        <TextView android:id="@+id/text_material_desc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Material Description" android:textColor="#F8FAFC" android:textStyle="bold" android:textSize="16sp" />
+
+        <TextView android:id="@+id/text_material_id" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MAT123" android:textSize="12sp" android:textColor="#3B82F6" android:textStyle="bold" android:layout_marginTop="4dp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp" android:background="#0F172A" android:padding="8dp">
+
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="DELIVERY QTY" android:textSize="10sp" android:textColor="#94A3B8" android:textStyle="bold" />
+
+            <TextView android:id="@+id/text_delivery_qty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#E2E8F0" android:text="10 PC" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp" android:background="#0F172A" android:padding="8dp">
+
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="PICKED QTY" android:textSize="10sp" android:textColor="#94A3B8" android:textStyle="bold" />
+
+            <TextView android:id="@+id/text_picked_qty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0 PC" android:textColor="#10B981" />
+            <!-- green-500 -->
+        </LinearLayout>
+
+        <TextView android:id="@+id/text_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Not Picked" android:textColor="#F59E0B" android:layout_marginTop="12dp" android:layout_marginStart="4dp" android:textSize="12sp" android:textStyle="bold" />
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

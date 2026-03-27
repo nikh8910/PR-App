@@ -1,0 +1,28 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.PRApp" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Main Brand Colors -->
+        <item name="colorPrimary">@color/brand_blue</item>
+        <item name="colorPrimaryVariant">@color/brand_dark_blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/brand_lime</item>
+
+        <!-- Surface and Background (React is Light Mode #f8fafc) -->
+        <item name="android:windowBackground">@color/slate_50</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/slate_700</item>
+        <item name="android:colorBackground">@color/slate_50</item>
+        <item name="colorOnBackground">@color/slate_700</item>
+
+        <!-- Text Colors -->
+        <item name="android:textColor">@color/slate_700</item>
+        <item name="android:textColorHint">@color/slate_400</item>
+        <item name="android:textColorPrimary">@color/slate_700</item>
+        <item name="android:textColorSecondary">@color/slate_500</item>
+
+        <!-- System Bars -->
+        <item name="android:statusBarColor">@color/brand_dark_blue</item>
+        <item name="android:navigationBarColor">@color/slate_50</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

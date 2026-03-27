@@ -1,0 +1,361 @@
+/* ================================================
+   Tailwind CSS Directives
+   (replaces the ~600 manual utility class definitions)
+   ================================================ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================
+   CSS Custom Properties (Design Tokens)
+   ================================================ */
+:root {
+  /* Core Brand Colors */
+  --bg-color: #f8fafc;
+  --header-bg: #002957;
+  --header-gradient: radial-gradient(circle at top right, #003673 0%, #002957 100%);
+  --text-color: #334155;
+  --text-muted: #64748b;
+  --text-light: #f8fafc;
+  --primary-color: #84cc16;
+  --primary-hover: #65a30d;
+  --brand-blue: #002957;
+  --brand-light-blue: #0ea5e9;
+  --surface-color: #ffffff;
+  --surface-border: #e2e8f0;
+
+  /* Radii & Shadows */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+
+  /* Design Tokens — Touch-Friendly UI */
+  --color-primary-heading:    var(--brand-blue);
+  --color-primary-text:       var(--text-color);
+  --color-secondary-text:     var(--text-muted);
+  --color-input-bg:           #ffffff;
+  --color-input-border:       #cbd5e1;
+  --color-focus-border:       var(--brand-blue);
+  --color-button-primary-bg:  var(--brand-blue);
+  --color-button-primary-text:#ffffff;
+  --color-error:              #ef4444;
+
+  /* Typography */
+  --font-system: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size-button: 1rem;
+
+  /* Spacing */
+  --space-design-unit:         0.50rem; /* 4px base */
+  --space-screen-padding-mobile: 1.5rem; /* 24px */
+  --space-form-gap:            1.5rem;  /* 24px vertical gap in forms */
+  --space-section-gap:         2rem;    /* 32px between major sections */
+
+  /* Touch Targets & Sizes */
+  --size-min-touch:          3rem;   /* 48px minimum interactive area */
+  --size-full-button-height: 3.5rem; /* 56px for primary full-width buttons */
+  --size-full-button-padding: 0 1.5rem;
+  --size-icon-tap-area:      3rem;   /* 48x48 icon tap target */
+
+  /* Inputs & Selects */
+  --size-input-height:   3.5rem;  /* 56px input/select height */
+  --size-input-radius:   0.75rem; /* 12px border radius */
+  --size-input-padding:  0 1rem;
+
+  /* Icon Sizes */
+  --icon-small:  1rem;  /* 16px */
+  --icon-medium: 1.5rem;/* 24px */
+  --icon-large:  2rem;  /* 32px */
+}
+
+/* ================================================
+   Base Resets
+   ================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-system);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================
+   App-Specific Component Classes
+   (These are NOT Tailwind utilities — keep them here)
+   ================================================ */
+
+/* App Headers */
+.app-header {
+  background: var(--header-bg);
+  background-image: var(--header-gradient);
+  color: white;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  position: relative;
+  z-index: 20;
+  box-shadow: 0 10px 30px -10px rgba(0, 41, 87, 0.5);
+}
+
+.app-header-straight {
+  background: var(--header-bg);
+  background-image: var(--header-gradient);
+  color: white;
+  z-index: 20;
+  /* On Android env(safe-area-inset-top) is 0px, so we enforce a 2.25rem
+     minimum to clear the ~24dp status bar. On iOS, safe-area takes over. */
+  padding-top: max(env(safe-area-inset-top, 0px), 2.25rem) !important;
+}
+
+/* Controls Area */
+.controls-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.search-container {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.btn-action {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Glass Card — clean white surface */
+.glass-card {
+  background: var(--surface-color);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+/* Typography base overrides */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--brand-blue);
+  letter-spacing: -0.025em;
+}
+
+.text-white-forced { color: white !important; }
+
+/* Force white text in header contexts */
+.header-context h1,
+.header-context h2,
+.header-context h3,
+.header-context p,
+.header-context span {
+  color: white;
+}
+
+p {
+  margin: 0 0 1rem 0;
+  color: var(--text-muted);
+}
+
+/* Forms & Inputs */
+label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.375rem;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 1rem;
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  height: auto;
+  display: inline-block;
+  padding: 0;
+}
+
+textarea {
+  height: auto;
+  padding: 0.75rem 1rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-light-blue);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  background-color: #fff;
+}
+
+input::placeholder {
+  color: #cbd5e1;
+}
+
+/* Buttons base reset */
+button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  /* height, padding, border-radius intentionally NOT set here
+     so Tailwind utility classes work correctly */
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  background-color: #0ea5e9;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:hover  { background-color: #0284c7; transform: translateY(-1px); }
+.btn-primary:active { background-color: #0369a1; transform: translateY(0); }
+
+.btn-secondary {
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  background-color: white;
+  border: 1px solid var(--surface-border);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover { background-color: #f1f5f9; color: var(--text-color); border-color: #cbd5e1; }
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Custom: Bottom Curve for Header */
+.rounded-b-curved {
+  border-bottom-left-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+  /* No margin-bottom — content-area padding manages the gap */
+}
+
+/* Content area below the curved header */
+.content-area {
+  padding-top: 2rem !important;
+  margin-top: 0 !important;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.badge-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid rgba(252, 211, 77, 0.2);
+}
+
+/* Animations */
+.animate-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Modal overlay */
+.modal-overlay-fallback {
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* ================================================
+   Tailwind Colour Extensions
+   (bg-brand-blue / text-brand-blue are now handled
+    by tailwind.config.js — these remain for any
+    legacy references not yet migrated)
+   ================================================ */
+.bg-brand-blue   { background-color: var(--header-bg); }
+.text-brand-blue { color: var(--brand-blue); }
+.bg-neon-lime    { background-color: #bef264; color: #1a2e05; }
+.text-neon-lime  { color: #84cc16; }

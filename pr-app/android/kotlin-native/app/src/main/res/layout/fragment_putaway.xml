@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#f8f9fa">
+
+    <TextView android:id="@+id/text_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Confirm Putaway" android:textSize="24sp" android:textStyle="bold" android:layout_margin="16dp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView android:id="@+id/text_subtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WT: Loading..." android:textSize="14sp" android:textColor="@color/design_default_color_primary" android:layout_marginStart="16dp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/text_title" />
+
+    <com.google.android.material.card.MaterialCardView android:id="@+id/card_task_summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginTop="16dp" app:cardCornerRadius="8dp" app:cardElevation="2dp" app:layout_constraintTop_toBottomOf="@id/text_subtitle">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:id="@+id/text_product_summary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Product: N/A" android:textStyle="bold" android:textSize="16sp" />
+
+            <TextView android:id="@+id/text_qty_summary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Planned Qty: 0 EA" />
+
+            <TextView android:id="@+id/text_source_bin" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Source Bin: N/A" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="8dp" app:layout_constraintTop_toBottomOf="@id/card_task_summary" app:layout_constraintBottom_toTopOf="@id/btn_confirm">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Destination Bin *" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_dest_bin" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Destination Storage Type" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_dest_type" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Actual Confirm Qty *" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_actual_qty" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/layout_exception_code" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Exception Code *" android:visibility="gone" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_exception_code" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:id="@+id/text_exception_code_helper" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Required because quantity or bin differs from plan" android:textSize="12sp" android:textColor="#F57C00" android:paddingStart="4dp" android:visibility="gone" />
+
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="Destination Handling Unit" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_dest_hu" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <Button android:id="@+id/btn_confirm" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="16dp" android:text="CONFIRM PUTAWAY" android:textSize="16sp" android:textStyle="bold" app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0F172A">    <!-- bg-slate-900 -->
+
+    <!-- Custom Top Header -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="64dp" android:background="#1E293B" android:elevation="4dp" app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@android:drawable/ic_menu_revert" app:tint="#F8FAFC" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <TextView android:id="@+id/text_od_header" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="OD: 80000001" android:textSize="18sp" android:textStyle="bold" android:textColor="#F1F5F9" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- Bottom border -->
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#334155" app:layout_constraintBottom_toBottomOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Content Area -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent" android:layout_height="0dp" android:padding="16dp" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView android:id="@+id/text_items_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Delivery Items" android:textSize="14sp" android:textStyle="bold" android:textColor="#94A3B8" android:textAllCaps="true" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="12dp" />
+
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_od_items" android:layout_width="match_parent" android:layout_height="0dp" app:layout_constraintTop_toBottomOf="@id/text_items_title" app:layout_constraintBottom_toTopOf="@id/btn_post_gi" android:layout_marginTop="12dp" android:layout_marginBottom="16dp" tools:listitem="@layout/item_od_detail" />
+
+        <Button android:id="@+id/btn_post_gi" android:layout_width="match_parent" android:layout_height="52dp" android:text="Post Goods Issue" android:textAllCaps="false" android:textStyle="bold" android:textSize="16sp" android:textColor="#FFFFFF" android:background="@drawable/bg_button_primary" app:backgroundTint="@null" app:layout_constraintBottom_toBottomOf="parent" />
+
+        <ProgressBar android:id="@+id/progress_detail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" android:indeterminateTint="#3B82F6" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

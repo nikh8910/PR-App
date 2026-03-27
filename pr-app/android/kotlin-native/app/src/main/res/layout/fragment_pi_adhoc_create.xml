@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8FAFC" android:focusableInTouchMode="true">
+
+    <!-- Header -->
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/header_layout" android:layout_width="match_parent" android:layout_height="72dp" android:background="#1E293B" android:elevation="4dp" app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView android:id="@+id/btn_back" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_revert" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Adhoc PI Create" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold" app:layout_constraintStart_toEndOf="@id/btn_back" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" android:layout_marginStart="16dp" />
+
+        <ImageView android:id="@+id/btn_home" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="16dp" android:padding="8dp" android:src="@android:drawable/ic_menu_compass" app:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:clipToPadding="false" android:paddingBottom="24dp" app:layout_constraintTop_toBottomOf="@id/header_layout" app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+            <!-- Added Items Section (Visible when items > 0) -->
+            <LinearLayout android:id="@+id/layout_added_items" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" android:padding="16dp" android:background="@drawable/bg_menu_card" android:layout_marginBottom="16dp">
+
+                <TextView android:id="@+id/text_items_header" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ITEMS TO CREATE" android:textSize="12sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="8dp"/>
+
+                <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_pi_items" android:layout_width="match_parent" android:layout_height="wrap_content" android:nestedScrollingEnabled="false" android:layout_marginBottom="16dp" />
+
+                <Button android:id="@+id/btn_create_pi" android:layout_width="match_parent" android:layout_height="56dp" android:text="CREATE PI DOCUMENT" android:textStyle="bold" android:backgroundTint="#0f172a" app:cornerRadius="8dp"/>
+            </LinearLayout>
+
+            <!-- Form Section -->
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="2dp" app:strokeColor="#E2E8F0" app:strokeWidth="1dp">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:background="#FFFFFF">
+
+                    <TextView android:id="@+id/text_form_header" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ADD ITEM" android:textSize="12sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="16dp"/>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WAREHOUSE *" android:textSize="10sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="4dp"/>
+                    <Spinner android:id="@+id/spinner_warehouse" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/spinner_background" android:layout_marginBottom="12dp"/>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PI PROCEDURE *" android:textSize="10sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="4dp"/>
+                    <Spinner android:id="@+id/spinner_pi_procedure" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/spinner_background" android:layout_marginBottom="12dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Storage Type (e.g. Z100)" android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_storage_type" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Storage Bin *" app:endIconMode="custom" app:endIconDrawable="@drawable/ic_scan" android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_storage_bin" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Product / GTIN" app:endIconMode="custom" app:endIconDrawable="@drawable/ic_scan" android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_product" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" android:textAllCaps="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Batch" android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/input_batch" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="REASON CODE" android:textSize="10sp" android:textStyle="bold" android:textColor="#64748B" android:layout_marginBottom="4dp"/>
+                    <Spinner android:id="@+id/spinner_reason" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/spinner_background" android:layout_marginBottom="16dp"/>
+
+                    <Button android:id="@+id/btn_add_item" android:layout_width="match_parent" android:layout_height="52dp" android:text="ADD ITEM" android:textStyle="bold" android:backgroundTint="#0ea5e9" app:cornerRadius="8dp"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" android:elevation="10dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
