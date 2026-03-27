@@ -1,9 +1,30 @@
+/**
+ * @file Dashboard.jsx
+ * @description Screen: Purchase Requisition (PR) Management
+ *
+ * Allows users to search, view, create, and convert SAP Purchase Requisitions (PRs)
+ * into Purchase Orders (POs). Despite the filename, this screen serves as the PR
+ * hub and is not a general dashboard.
+ *
+ * ## Views
+ *  - list: Browse / search PRs
+ *  - items: View line items of a selected PR, add new items, or convert to PO
+ *  - create: Create a new PR (optionally prefilled from a reference PR)
+ *  - createPO: Create a new PO (optionally prefilled from a reference PR)
+ *
+ * SAP API: API_PURCHASEREQ_PROCESS_SRV + API_PURCHASEORDER_PROCESS_SRV
+ *
+ * @route /pr
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { Search, Plus, Package, FileText, AlertCircle, Loader, X, ChevronDown, ChevronUp, AlertTriangle, ArrowLeft, Scan, Home, Calendar, ShoppingCart } from 'lucide-react';
 import BarcodeScanner from '../components/BarcodeScanner';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Button } from '../components/ui/Button';
 
 const Dashboard = () => {
     // Utility to clean up material numbers for display
@@ -15,6 +36,7 @@ const Dashboard = () => {
     const [prs, setPrs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errorDetails, setErrorDetails] = useState(null); // { title: string, message: string }
+    const [successMsg, setSuccessMsg] = useState('');
     const [currentView, setCurrentView] = useState('list'); // 'list' | 'create' | 'items' | 'createPO'
     const [selectedPR, setSelectedPR] = useState(null); // The detailed PR object for Item View
     const [expandedPR, setExpandedPR] = useState(null);
@@ -618,70 +640,86 @@ const Dashboard = () => {
             {/* Fixed Header */}
             <header className="app-header-straight pb-8 px-6 shadow-lg flex-none z-20 relative rounded-b-curved" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)' }}>
                 <div className="flex justify-between items-start mb-6">
-                    <button onClick={() => navigate('/menu')} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition">
+                    <button onClick={() => { setErrorDetails(null); navigate(-1); }} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Back">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <button onClick={() => { setErrorDetails(null); navigate('/menu', { replace: true }); }} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Home">
                         <Home size={20} />
                     </button>
                 </div>
 
-                <div className="flex flex-col items-center justify-center -mt-2 mb-2 relative">
+                <div className="flex flex-col items-center justify-center mb-2 relative">
                     <h1 className="text-3xl font-bold text-white mb-1">
                         {prs.length}
                         <span className="text-lg text-blue-200">/{prs.length}</span>
                     </h1>
                     <p className="text-blue-200 text-sm font-medium uppercase tracking-wider">Purchase Requisitions</p>
                 </div>
-
-                {/* Search Bar - Centered like GR */}
-                <div className="relative mt-4">
-                    <input
-                        type="text"
-                        placeholder="Enter Document Number"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white h-12 rounded-lg px-4 text-slate-700 placeholder-slate-400 shadow-lg border-0 focus:ring-2 focus:ring-blue-400 text-center font-medium"
-                    />
-                </div>
             </header>
 
-            {/* Main Scrollable Content */}
-            <main className="flex-1 overflow-y-auto px-4 pt-6 pb-32 -mt-2 z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
-                <div className="max-w-5xl mx-auto">
-
-                    {/* Error Toast / Banner */}
-                    {errorDetails && (
-                        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-4 animate-in shadow-sm">
-                            <AlertTriangle className="text-red-500 shrink-0 mt-1" />
-                            <div className="flex-1">
-                                <h4 className="text-red-700 text-sm font-bold m-0 mb-1">{errorDetails.title}</h4>
-                                <p className="text-red-600 text-xs m-0 break-all opacity-90 font-mono">{errorDetails.message}</p>
+            {/* Inline Error/Success Messages - Always visible below header */}
+            {
+                (errorDetails || successMsg) && (
+                    <div className="px-4 py-3 z-50 w-full shrink-0 flex flex-col gap-2 relative">
+                        {errorDetails && (
+                            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3 shadow-md flex gap-3 items-start w-full max-w-5xl mx-auto animate-in slide-in-from-top-2">
+                                <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-xs font-bold text-red-700">{errorDetails.title || 'Error'}</h4>
+                                    <p className="text-[11px] text-red-600 mt-0.5 whitespace-pre-wrap font-mono break-all">{errorDetails.message || errorDetails}</p>
+                                </div>
+                                <button onClick={() => setErrorDetails(null)} className="p-1 hover:bg-red-100 rounded-md transition-colors shrink-0">
+                                    <X size={14} className="text-red-500" />
+                                </button>
                             </div>
-                            <button onClick={() => setErrorDetails(null)}><X size={16} className="text-red-400 hover:text-red-600" /></button>
-                        </div>
-                    )}
+                        )}
+                        {successMsg && (
+                            <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-3 shadow-md flex gap-3 items-start w-full max-w-5xl mx-auto animate-in slide-in-from-top-2">
+                                <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-xs font-bold text-emerald-700">Success</h4>
+                                    <p className="text-[11px] text-emerald-600 mt-0.5 whitespace-pre-wrap">{successMsg}</p>
+                                </div>
+                                <button onClick={() => setSuccessMsg('')} className="p-1 hover:bg-emerald-100 rounded-md transition-colors shrink-0">
+                                    <X size={14} className="text-emerald-500" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )
+            }
+
+            {/* Main Scrollable Content */}
+            <main className="flex-1 overflow-y-auto px-4 pt-4 pb-32 z-10 content-area" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="max-w-5xl mx-auto">
 
                     {/* LIST VIEW */}
                     {currentView === 'list' && (
                         <>
-                            {/* Tabs and Actions */}
-                            <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar mb-4">
-                                <button className="flex-none flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-700 text-sm font-bold min-w-[140px] justify-center">
-                                    <FileText size={16} className="text-blue-600" /> Requisitions
-                                </button>
-                                <button
+                            {/* Search Bar - Moved from Header */}
+                            <div className="relative mb-4">
+                                <Input
+                                    placeholder="Enter Document Number"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="shadow-sm font-medium text-center border-slate-200"
+                                />
+                            </div>
+                            {/* Actions Row */}
+                            <div className="flex flex-col gap-3 mb-4">
+                                <Button
                                     onClick={() => setCurrentView('create')}
-                                    style={{ backgroundColor: '#0ea5e9' }}
-                                    className="flex-none flex items-center gap-2 px-4 py-2 rounded-full shadow-sm text-white text-sm font-bold min-w-[100px] justify-center hover:opacity-90 transition-all"
+                                    className="w-full"
                                 >
-                                    <Plus size={16} /> Create New
-                                </button>
-                                <button
+                                    <Plus size={16} /> Create New Requisition
+                                </Button>
+                                <Button
                                     onClick={handleFetch}
-                                    style={{ backgroundColor: '#0ea5e9' }}
-                                    className="flex-none flex items-center gap-2 px-4 py-2 rounded-full shadow-sm text-white text-sm font-bold min-w-[100px] justify-center hover:opacity-90 transition-all disabled:opacity-50"
                                     disabled={loading}
+                                    className="w-full"
                                 >
                                     {loading ? <Loader size={16} className="animate-spin" /> : <Search size={16} />} Search
-                                </button>
+                                </Button>
                             </div>
 
                             {/* List */}
@@ -742,24 +780,22 @@ const Dashboard = () => {
                     {/* ITEMS VIEW */}
                     {currentView === 'items' && selectedPR && (
                         <div className="animate-in slide-in-from-right-4">
-                            <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
-                                <button onClick={() => setCurrentView('list')} style={{ backgroundColor: '#0ea5e9' }} className="px-4 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2">
-                                    <ArrowLeft size={16} /> Back
-                                </button>
-                                <div className="flex gap-2">
-                                    <button
+                            <div className="flex flex-col gap-3 mb-4">
+                                <Button onClick={() => setCurrentView('list')} className="w-full flex items-center gap-2">
+                                    <ArrowLeft size={16} /> Back to List
+                                </Button>
+                                <div className="flex flex-col gap-2">
+                                    <Button
                                         onClick={handleConvertToPO}
                                         disabled={converting}
-                                        style={{ backgroundColor: '#10b981' }}
-                                        className="px-4 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                                        className="w-full"
                                     >
                                         {converting ? <Loader size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
                                         {converting ? 'Creating...' : 'Create PO'}
-                                    </button>
+                                    </Button>
                                     <button
                                         onClick={() => setIsAddingItem(!isAddingItem)}
-                                        style={{ backgroundColor: isAddingItem ? '#94a3b8' : '#0ea5e9' }}
-                                        className="px-4 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2"
+                                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 ${isAddingItem ? 'bg-slate-400' : 'bg-brand-blue'}`}
                                     >
                                         {isAddingItem ? <X size={16} /> : <Plus size={16} />}
                                         {isAddingItem ? 'Cancel' : 'Add Item'}
@@ -773,90 +809,65 @@ const Dashboard = () => {
 
                                     <div className="space-y-4">
                                         {/* Material Number - Full Width */}
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Material Number</label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    value={newItemForPR.Material}
-                                                    onChange={e => setNewItemForPR({ ...newItemForPR, Material: e.target.value })}
-                                                    placeholder="e.g. TG11"
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full flex-1 h-10 px-3 transition-all"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="p-2.5 bg-white text-blue-600 border border-slate-300 rounded-lg hover:bg-blue-50 shadow-sm transition-colors flex-shrink-0"
-                                                    onClick={() => setActiveScanField('newItemMaterial')}
-                                                >
+                                        <Input
+                                            label={<>Material Number <span className="text-[10px] text-slate-400 font-normal normal-case ml-1">(Optional for Text Item)</span></>}
+                                            value={newItemForPR.Material}
+                                            onChange={e => setNewItemForPR({ ...newItemForPR, Material: e.target.value.toUpperCase() })}
+                                            placeholder="e.g. TG11"
+                                            rightIcon={
+                                                <button type="button" onClick={() => setActiveScanField('newItemMaterial')} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Scan size={18} />
                                                 </button>
-                                            </div>
-                                        </div>
+                                            }
+                                        />
 
                                         {/* Two Column Row - Plant & Purchasing Grp */}
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Plant</label>
-                                                <input
-                                                    value={newItemForPR.Plant}
-                                                    onChange={e => setNewItemForPR({ ...newItemForPR, Plant: e.target.value })}
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Purchasing Grp</label>
-                                                <input
-                                                    value={newItemForPR.PurchasingGroup}
-                                                    onChange={e => setNewItemForPR({ ...newItemForPR, PurchasingGroup: e.target.value })}
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
+                                            <Input
+                                                label="Plant"
+                                                value={newItemForPR.Plant}
+                                                onChange={e => setNewItemForPR({ ...newItemForPR, Plant: e.target.value.toUpperCase() })}
+                                            />
+                                            <Input
+                                                label="Purchasing Grp"
+                                                value={newItemForPR.PurchasingGroup}
+                                                onChange={e => setNewItemForPR({ ...newItemForPR, PurchasingGroup: e.target.value.toUpperCase() })}
+                                            />
                                         </div>
 
                                         {/* Description - Full Width */}
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Description</label>
-                                            <input
-                                                value={newItemForPR.PurchaseRequisitionItemText}
-                                                onChange={e => setNewItemForPR({ ...newItemForPR, PurchaseRequisitionItemText: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
+                                        <Input
+                                            label="Description"
+                                            value={newItemForPR.PurchaseRequisitionItemText}
+                                            onChange={e => setNewItemForPR({ ...newItemForPR, PurchaseRequisitionItemText: e.target.value })}
+                                        />
 
                                         {/* Quantity - Full Width */}
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Quantity</label>
-                                            <input
-                                                type="number"
-                                                value={newItemForPR.RequestedQuantity}
-                                                onChange={e => setNewItemForPR({ ...newItemForPR, RequestedQuantity: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
+                                        <Input
+                                            label="Quantity"
+                                            type="number"
+                                            value={newItemForPR.RequestedQuantity}
+                                            onChange={e => setNewItemForPR({ ...newItemForPR, RequestedQuantity: e.target.value })}
+                                        />
 
                                         {/* Two Column Row - Unit & Delivery Date */}
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Unit (ISO)</label>
-                                                <input
-                                                    value={newItemForPR.BaseUnit}
-                                                    onChange={e => setNewItemForPR({ ...newItemForPR, BaseUnit: e.target.value })}
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Delivery Date</label>
-                                                <input
-                                                    type="date"
-                                                    value={newItemForPR.DeliveryDate}
-                                                    onChange={e => setNewItemForPR({ ...newItemForPR, DeliveryDate: e.target.value })}
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
+                                            <Input
+                                                label="Unit (ISO)"
+                                                value={newItemForPR.BaseUnit}
+                                                onChange={e => setNewItemForPR({ ...newItemForPR, BaseUnit: e.target.value.toUpperCase() })}
+                                            />
+                                            <Input
+                                                label="Delivery Date"
+                                                type="date"
+                                                value={newItemForPR.DeliveryDate}
+                                                onChange={e => setNewItemForPR({ ...newItemForPR, DeliveryDate: e.target.value })}
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end mt-6">
-                                        <button type="button" onClick={handleAddItemSubmit} style={{ backgroundColor: '#0ea5e9' }} className="px-6 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95">
+                                    <div className="mt-6 w-full">
+                                        <button type="button" onClick={handleAddItemSubmit} className="w-full bg-brand-blue px-6 py-3 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95">
                                             Confirm Add Item
                                         </button>
                                     </div>
@@ -865,7 +876,7 @@ const Dashboard = () => {
 
                             <div className="grid grid-cols-1 gap-4">
                                 {selectedPR._PurchaseRequisitionItem?.map(item => (
-                                    <div key={item.PurchaseRequisitionItem} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all">
+                                    <div key={item.PurchaseRequisitionItem} className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden hover:shadow-md transition-all">
                                         <div
                                             className="p-5 cursor-pointer flex justify-between items-center hover:bg-slate-50 transition-colors"
                                             onClick={() => toggleItemExpand(item.PurchaseRequisitionItem)}
@@ -979,7 +990,7 @@ const Dashboard = () => {
                     {/* CREATE VIEW */}
                     {currentView === 'create' && (
                         <div className="animate-in slide-in-from-bottom-4">
-                            <div className="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow border border-slate-200">
                                 <div>
                                     <h2 className="m-0 text-xl font-bold text-slate-800">New Purchase Requisition</h2>
                                     <p className="text-sm text-slate-500 m-0 mt-1">Create a new internal request for materials or services</p>
@@ -992,22 +1003,19 @@ const Dashboard = () => {
                             {/* Reference PR Section */}
                             <div className="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
                                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                                    <div className="flex-1 w-full sm:w-auto">
-                                        <label className="block text-xs font-bold text-amber-700 mb-1.5 uppercase">Reference PR (Optional)</label>
-                                        <input
-                                            type="text"
+                                    <div className="flex-1 w-full ">
+                                        <Input
+                                            label="Reference PR (Optional)"
                                             value={referencePRNumber}
                                             onChange={e => setReferencePRNumber(e.target.value)}
                                             placeholder="Enter existing PR number to copy"
-                                            className="bg-white border border-amber-300 text-slate-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 rounded-lg w-full h-10 px-3 transition-all"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleLoadReferencePR}
                                         disabled={loadingReferencePR || !referencePRNumber.trim()}
-                                        style={{ backgroundColor: '#f59e0b' }}
-                                        className="px-4 py-2 h-10 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                                        className="w-full bg-brand-blue px-4 py-2 h-10 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
                                     >
                                         {loadingReferencePR ? <Loader size={16} className="animate-spin" /> : <FileText size={16} />}
                                         {loadingReferencePR ? 'Loading...' : 'Load PR'}
@@ -1017,44 +1025,38 @@ const Dashboard = () => {
                             </div>
 
                             <form onSubmit={handleCreateSubmit}>
-                                <div className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200 relative overflow-hidden">
+                                <div className="mb-6 p-6 bg-white rounded-xl shadow border border-slate-200 relative overflow-hidden">
                                     <h3 className="text-sm uppercase text-slate-400 font-bold mb-6 tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
                                         <FileText size={16} className="text-blue-500" /> Header Data
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">PR Number (Optional)</label>
-                                            <input
+                                            <Input
+                                                label={<>PR Number <span className="text-[10px] text-slate-400 font-normal normal-case ml-1">(Optional, internal numbering if empty)</span></>}
                                                 value={newPR.PurchaseRequisition}
                                                 onChange={e => setNewPR({ ...newPR, PurchaseRequisition: e.target.value })}
                                                 placeholder="Leave empty for auto"
-                                                className="bg-white border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full transition-all"
-                                            />
-                                            <span className="text-[10px] text-slate-400 mt-1 block">Internal numbering if empty</span>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Doc Type</label>
-                                            <input
-                                                value={newPR.PurchaseRequisitionType}
-                                                onChange={e => setNewPR({ ...newPR, PurchaseRequisitionType: e.target.value })}
-                                                required
-                                                className="bg-white border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full transition-all"
                                             />
                                         </div>
+                                        <Input
+                                            label="Doc Type *"
+                                            value={newPR.PurchaseRequisitionType}
+                                            onChange={e => setNewPR({ ...newPR, PurchaseRequisitionType: e.target.value })}
+                                            required
+                                        />
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Description</label>
-                                            <input
+                                            <Input
+                                                label="Description *"
                                                 value={newPR.PurReqnDescription}
                                                 onChange={e => setNewPR({ ...newPR, PurReqnDescription: e.target.value })}
                                                 required
-                                                className="bg-white border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full transition-all"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 {newPR._PurchaseRequisitionItem.map((item, index) => (
-                                    <div key={index} className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200 relative group border-l-4 border-l-blue-500">
+                                    <div key={index} className="mb-6 p-6 bg-white rounded-xl shadow border border-slate-200 relative group border-l-4 border-l-blue-500">
                                         <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-2">
                                             <h3 className="text-sm uppercase text-slate-400 font-bold tracking-wider flex items-center gap-2">
                                                 <Package size={16} className="text-blue-500" /> Line Item {item.PurchaseRequisitionItem}
@@ -1074,204 +1076,165 @@ const Dashboard = () => {
                                         {/* Form Fields - Mobile First Layout */}
                                         <div className="space-y-4">
                                             {/* Material Number */}
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Material Number</label>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        value={item.Material}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].Material = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        placeholder="e.g. TG11 (Empty for Text Item)"
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full flex-1 h-10 px-3 transition-all"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setActiveScanField(`material-${index}`)}
-                                                        className="p-2.5 bg-white text-blue-600 border border-slate-300 rounded-lg hover:bg-blue-50 shadow-sm transition-colors flex-shrink-0"
-                                                        title="Scan Barcode"
-                                                    >
+                                            <Input
+                                                label={<>Material Number <span className="text-[10px] text-slate-400 font-normal normal-case ml-1">(Leave empty for Text Item)</span></>}
+                                                value={item.Material}
+                                                onChange={e => {
+                                                    const items = [...newPR._PurchaseRequisitionItem];
+                                                    items[index].Material = e.target.value.toUpperCase();
+                                                    setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                }}
+                                                placeholder="e.g. TG11"
+                                                rightIcon={
+                                                    <button type="button" onClick={() => setActiveScanField(`material-${index}`)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Scan Barcode">
                                                         <Scan size={18} />
                                                     </button>
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 mt-1 block">Leave empty to create a Service/Text item</span>
-                                            </div>
+                                                }
+                                            />
 
                                             {/* Two Column Row - Plant & Purchasing Group */}
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Plant</label>
-                                                    <input
-                                                        value={item.Plant}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].Plant = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        required
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Purchasing Group</label>
-                                                    <input
-                                                        value={item.PurchasingGroup}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].PurchasingGroup = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        required
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    label="Plant *"
+                                                    value={item.Plant}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].Plant = e.target.value.toUpperCase();
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    required
+                                                />
+                                                <Input
+                                                    label="Purchasing Group *"
+                                                    value={item.PurchasingGroup}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].PurchasingGroup = e.target.value.toUpperCase();
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    required
+                                                />
                                             </div>
 
                                             {/* Item Description */}
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Item Description</label>
-                                                <input
-                                                    value={item.PurchaseRequisitionItemText}
-                                                    onChange={e => {
-                                                        const items = [...newPR._PurchaseRequisitionItem];
-                                                        items[index].PurchaseRequisitionItemText = e.target.value;
-                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                    }}
-                                                    required={!item.Material}
-                                                    placeholder="e.g. Consulting Services"
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
+                                            <Input
+                                                label="Item Description"
+                                                value={item.PurchaseRequisitionItemText}
+                                                onChange={e => {
+                                                    const items = [...newPR._PurchaseRequisitionItem];
+                                                    items[index].PurchaseRequisitionItemText = e.target.value;
+                                                    setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                }}
+                                                required={!item.Material}
+                                                placeholder="e.g. Consulting Services"
+                                            />
 
                                             {/* Material Group */}
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Material Group</label>
-                                                <input
-                                                    value={item.MaterialGroup}
-                                                    onChange={e => {
-                                                        const items = [...newPR._PurchaseRequisitionItem];
-                                                        items[index].MaterialGroup = e.target.value;
-                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                    }}
-                                                    required={!item.Material}
-                                                    placeholder="e.g. A001"
-                                                    className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                />
-                                            </div>
+                                            <Input
+                                                label="Material Group"
+                                                value={item.MaterialGroup}
+                                                onChange={e => {
+                                                    const items = [...newPR._PurchaseRequisitionItem];
+                                                    items[index].MaterialGroup = e.target.value.toUpperCase();
+                                                    setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                }}
+                                                required={!item.Material}
+                                                placeholder="e.g. A001"
+                                            />
 
                                             {/* Two Column Row - Quantity & Unit */}
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Quantity</label>
-                                                    <input
-                                                        type="number"
-                                                        value={item.RequestedQuantity}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].RequestedQuantity = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        required
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Unit (ISO Code)</label>
-                                                    <input
-                                                        value={item.BaseUnit}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].BaseUnit = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        required
-                                                        placeholder="e.g. PCE"
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    label="Quantity *"
+                                                    type="number"
+                                                    value={item.RequestedQuantity}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].RequestedQuantity = e.target.value;
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    required
+                                                />
+                                                <Input
+                                                    label="Unit (ISO Code) *"
+                                                    value={item.BaseUnit}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].BaseUnit = e.target.value.toUpperCase();
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    required
+                                                    placeholder="e.g. PCE"
+                                                />
                                             </div>
                                         </div>
                                         {/* Optional Fields - Two Column Layout */}
                                         <div className="pt-4 border-t border-slate-100 mt-4 space-y-4">
                                             {/* Two Column Row - Supplier & Delivery Date */}
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Supplier (Optional)</label>
-                                                    <input
-                                                        value={item.FixedSupplier}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].FixedSupplier = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        placeholder="e.g. 100000"
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Delivery Date</label>
-                                                    <input
-                                                        type="date"
-                                                        value={item.DeliveryDate}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].DeliveryDate = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    label="Supplier (Optional)"
+                                                    value={item.FixedSupplier}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].FixedSupplier = e.target.value;
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    placeholder="e.g. 100000"
+                                                />
+                                                <Input
+                                                    label="Delivery Date"
+                                                    type="date"
+                                                    value={item.DeliveryDate}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].DeliveryDate = e.target.value;
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                />
                                             </div>
 
                                             {/* Two Column Row - Est. Price & Currency */}
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Est. Price</label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={item.PurchaseRequisitionPrice}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].PurchaseRequisitionPrice = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Currency</label>
-                                                    <input
-                                                        value={item.PurReqnItemCurrency}
-                                                        onChange={e => {
-                                                            const items = [...newPR._PurchaseRequisitionItem];
-                                                            items[index].PurReqnItemCurrency = e.target.value;
-                                                            setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
-                                                        }}
-                                                        placeholder="EUR"
-                                                        className="bg-white border border-slate-300 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg w-full h-10 px-3 transition-all"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    label="Est. Price"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={item.PurchaseRequisitionPrice}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].PurchaseRequisitionPrice = e.target.value;
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                />
+                                                <Input
+                                                    label="Currency"
+                                                    value={item.PurReqnItemCurrency}
+                                                    onChange={e => {
+                                                        const items = [...newPR._PurchaseRequisitionItem];
+                                                        items[index].PurReqnItemCurrency = e.target.value.toUpperCase();
+                                                        setNewPR({ ...newPR, _PurchaseRequisitionItem: items });
+                                                    }}
+                                                    placeholder="EUR"
+                                                />
                                             </div>
                                         </div>
                                     </div>
                                 ))}
 
                                 <div className="flex justify-center mb-6">
-                                    <button type="button" onClick={handleAddItem} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-bold px-4 py-2 rounded-lg hover:bg-white transition-colors border border-dashed border-blue-300 bg-blue-50">
+                                    <button type="button" onClick={handleAddItem} className="bg-brand-blue w-full text-white flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-bold px-4 py-2 rounded-lg hover:bg-white transition-colors border border-dashed border-blue-300 ">
                                         <Plus size={16} /> Add Another Item
                                     </button>
                                 </div>
 
-                                <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-200">
-                                    <button type="button" onClick={() => setCurrentView('list')} className="btn-secondary text-slate-600 hover:bg-slate-100 font-bold border border-slate-200">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" style={{ backgroundColor: '#0ea5e9' }} className="px-8 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-lg transition-all active:scale-95 flex items-center gap-2" disabled={loading}>
+                                <div className="flex flex-col gap-3 mt-6 mb-2 px-1">
+                                    <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 bg-brand-blue hover:opacity-90 text-white font-bold text-sm uppercase rounded-lg shadow-lg transition-all active:scale-95" disabled={loading}>
                                         {loading ? <Loader className="animate-spin" size={16} /> : <Plus size={16} />}
                                         <span>Create Requisition</span>
+                                    </button>
+                                    <button type="button" onClick={() => setCurrentView('list')} className="w-full py-3 text-slate-600 hover:bg-slate-100 font-bold border border-slate-200 bg-white rounded-lg transition-colors">
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
@@ -1281,7 +1244,7 @@ const Dashboard = () => {
                     {/* CREATE PO VIEW */}
                     {currentView === 'createPO' && (
                         <div className="animate-in slide-in-from-bottom-4">
-                            <div className="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow border border-slate-200">
                                 <div>
                                     <h2 className="m-0 text-xl font-bold text-slate-800">Create Purchase Order</h2>
                                     <p className="text-sm text-slate-500 m-0 mt-1">Create a PO from an existing Purchase Requisition</p>
@@ -1294,22 +1257,20 @@ const Dashboard = () => {
                             {/* Reference PR Section */}
                             <div className="mb-4 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                                    <div className="flex-1 w-full sm:w-auto">
-                                        <label className="block text-xs font-bold text-emerald-700 mb-1.5 uppercase">Reference PR (Required)</label>
-                                        <input
-                                            type="text"
+                                    <div className="flex-1 w-full ">
+                                        <Input
+                                            label={<span className="text-emerald-700">Reference PR <span className="text-[10px] uppercase font-bold text-emerald-600">(Required)</span></span>}
                                             value={poReferencePR}
                                             onChange={e => setPoReferencePR(e.target.value)}
                                             placeholder="Enter PR number to load items"
-                                            className="bg-white border border-emerald-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
+                                            className="border-emerald-300 focus-within:border-emerald-500 focus-within:ring-emerald-100"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleLoadPOReference}
                                         disabled={loadingPOReference || !poReferencePR.trim()}
-                                        style={{ backgroundColor: '#10b981' }}
-                                        className="px-4 py-2 h-10 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                                        className="w-full bg-brand-blue px-4 py-2 h-10 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
                                     >
                                         {loadingPOReference ? <Loader size={16} className="animate-spin" /> : <FileText size={16} />}
                                         {loadingPOReference ? 'Loading...' : 'Load PR'}
@@ -1320,59 +1281,49 @@ const Dashboard = () => {
 
                             <form onSubmit={handleSubmitPO}>
                                 {/* Header Data */}
-                                <div className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+                                <div className="mb-6 p-6 bg-white rounded-xl shadow border border-slate-200">
                                     <h3 className="text-sm uppercase text-slate-400 font-bold mb-6 tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
                                         <ShoppingCart size={16} className="text-emerald-500" /> PO Header Data
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Supplier/Vendor *</label>
-                                            <input
-                                                value={newPO.Supplier}
-                                                onChange={e => setNewPO({ ...newPO, Supplier: e.target.value })}
-                                                required
-                                                placeholder="e.g. 1000001"
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Purchasing Org</label>
-                                            <input
-                                                value={newPO.PurchasingOrganization}
-                                                onChange={e => setNewPO({ ...newPO, PurchasingOrganization: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Purchasing Group</label>
-                                            <input
-                                                value={newPO.PurchasingGroup}
-                                                onChange={e => setNewPO({ ...newPO, PurchasingGroup: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Company Code</label>
-                                            <input
-                                                value={newPO.CompanyCode}
-                                                onChange={e => setNewPO({ ...newPO, CompanyCode: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Currency</label>
-                                            <input
-                                                value={newPO.DocumentCurrency}
-                                                onChange={e => setNewPO({ ...newPO, DocumentCurrency: e.target.value })}
-                                                className="bg-white border border-slate-300 text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 rounded-lg w-full h-10 px-3 transition-all"
-                                            />
-                                        </div>
+                                        <Input
+                                            label="Supplier/Vendor *"
+                                            value={newPO.Supplier}
+                                            onChange={e => setNewPO({ ...newPO, Supplier: e.target.value })}
+                                            required
+                                            placeholder="e.g. 1000001"
+                                            className="focus-within:border-emerald-500 focus-within:ring-emerald-100"
+                                        />
+                                        <Input
+                                            label="Purchasing Org"
+                                            value={newPO.PurchasingOrganization}
+                                            onChange={e => setNewPO({ ...newPO, PurchasingOrganization: e.target.value })}
+                                            className="focus-within:border-emerald-500 focus-within:ring-emerald-100"
+                                        />
+                                        <Input
+                                            label="Purchasing Group"
+                                            value={newPO.PurchasingGroup}
+                                            onChange={e => setNewPO({ ...newPO, PurchasingGroup: e.target.value })}
+                                            className="focus-within:border-emerald-500 focus-within:ring-emerald-100"
+                                        />
+                                        <Input
+                                            label="Company Code"
+                                            value={newPO.CompanyCode}
+                                            onChange={e => setNewPO({ ...newPO, CompanyCode: e.target.value })}
+                                            className="focus-within:border-emerald-500 focus-within:ring-emerald-100"
+                                        />
+                                        <Input
+                                            label="Currency"
+                                            value={newPO.DocumentCurrency}
+                                            onChange={e => setNewPO({ ...newPO, DocumentCurrency: e.target.value })}
+                                            className="focus-within:border-emerald-500 focus-within:ring-emerald-100"
+                                        />
                                     </div>
                                 </div>
 
                                 {/* Items Section */}
                                 {newPO.items.length > 0 && (
-                                    <div className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+                                    <div className="mb-6 p-6 bg-white rounded-xl shadow border border-slate-200">
                                         <h3 className="text-sm uppercase text-slate-400 font-bold mb-4 tracking-wider">
                                             PO Items ({newPO.items.length})
                                         </h3>
@@ -1399,45 +1350,39 @@ const Dashboard = () => {
                                                     </div>
                                                     {/* Editable Fields */}
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Quantity</label>
-                                                            <input
-                                                                type="number"
-                                                                value={item.OrderQuantity}
-                                                                onChange={e => {
-                                                                    const items = [...newPO.items];
-                                                                    items[index].OrderQuantity = e.target.value;
-                                                                    setNewPO({ ...newPO, items });
-                                                                }}
-                                                                className="bg-white border border-slate-300 rounded-lg w-full h-9 px-2 text-sm"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Price</label>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                value={item.NetPriceAmount}
-                                                                onChange={e => {
-                                                                    const items = [...newPO.items];
-                                                                    items[index].NetPriceAmount = e.target.value;
-                                                                    setNewPO({ ...newPO, items });
-                                                                }}
-                                                                className="bg-white border border-slate-300 rounded-lg w-full h-9 px-2 text-sm"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Plant</label>
-                                                            <input
-                                                                value={item.Plant}
-                                                                onChange={e => {
-                                                                    const items = [...newPO.items];
-                                                                    items[index].Plant = e.target.value;
-                                                                    setNewPO({ ...newPO, items });
-                                                                }}
-                                                                className="bg-white border border-slate-300 rounded-lg w-full h-9 px-2 text-sm"
-                                                            />
-                                                        </div>
+                                                        <Input
+                                                            label="Quantity"
+                                                            type="number"
+                                                            value={item.OrderQuantity}
+                                                            onChange={e => {
+                                                                const items = [...newPO.items];
+                                                                items[index].OrderQuantity = e.target.value;
+                                                                setNewPO({ ...newPO, items });
+                                                            }}
+                                                            wrapperClassName="mt-0"
+                                                        />
+                                                        <Input
+                                                            label="Price"
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={item.NetPriceAmount}
+                                                            onChange={e => {
+                                                                const items = [...newPO.items];
+                                                                items[index].NetPriceAmount = e.target.value;
+                                                                setNewPO({ ...newPO, items });
+                                                            }}
+                                                            wrapperClassName="mt-0"
+                                                        />
+                                                        <Input
+                                                            label="Plant"
+                                                            value={item.Plant}
+                                                            onChange={e => {
+                                                                const items = [...newPO.items];
+                                                                items[index].Plant = e.target.value.toUpperCase();
+                                                                setNewPO({ ...newPO, items });
+                                                            }}
+                                                            wrapperClassName="mt-0"
+                                                        />
                                                     </div>
                                                 </div>
                                             ))}
@@ -1455,22 +1400,21 @@ const Dashboard = () => {
                                 )}
 
                                 {/* Submit Buttons */}
-                                <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-200">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setCurrentView('list'); navigate('/pr'); }}
-                                        className="btn-secondary text-slate-600 hover:bg-slate-100 font-bold border border-slate-200"
-                                    >
-                                        Cancel
-                                    </button>
+                                <div className="flex flex-col gap-3 mt-8 pt-6 border-t border-slate-200 px-1">
                                     <button
                                         type="submit"
-                                        style={{ backgroundColor: '#10b981' }}
-                                        className="px-8 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-brand-blue hover:opacity-90 text-white font-bold text-sm uppercase rounded-lg shadow-lg transition-all active:scale-95"
                                         disabled={creatingPO || !newPO.items.length}
                                     >
                                         {creatingPO ? <Loader className="animate-spin" size={16} /> : <ShoppingCart size={16} />}
                                         <span>Create Purchase Order</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setCurrentView('list'); navigate('/pr'); }}
+                                        className="w-full py-3 text-slate-600 hover:bg-slate-100 font-bold border border-slate-200 bg-white rounded-lg transition-colors"
+                                    >
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
@@ -1478,6 +1422,7 @@ const Dashboard = () => {
                     )}
                 </div>
             </main >
+
             {/* Scanner Modal */}
             {
                 activeScanField && (

@@ -1,9 +1,10 @@
 {
   "appId": "com.example.sappr",
-  "appName": "SAP PR App",
+  "appName": "ODS mWH",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": ["*"]
   },
   "plugins": {
     "CapacitorHttp": {

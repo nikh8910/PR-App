@@ -1,8 +1,28 @@
+/**
+ * @file Login.jsx
+ * @description Screen: Login / SAP Connection Setup
+ *
+ * Entry point for the app. The user provides either:
+ *  - SAP API Endpoint + Username + Password (Basic Auth), or
+ *  - SAP API Key (for sandbox/shared systems)
+ *
+ * Credentials are validated on login by calling api.validateCredentials,
+ * which makes a lightweight request to the PR API. If successful, they are
+ * persisted to localStorage via AuthContext so the user stays logged in
+ * across app restarts without re-entering credentials.
+ *
+ * Already-authenticated users are automatically redirected to /menu.
+ *
+ * @route /login (default / root route)
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Key, Server, User, Loader, AlertCircle } from 'lucide-react';
-import { api } from '../services/api';
+import { api, extractSapMessage } from '../services/api';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Heading } from '../components/ui/Heading';
 
 const Login = () => {
     const { apiConfig, login, user } = useAuth();
@@ -16,7 +36,7 @@ const Login = () => {
 
     useEffect(() => {
         if (user) {
-            navigate('/menu');
+            navigate('/menu', { replace: true });
         }
     }, [user, navigate]);
 
@@ -31,9 +51,9 @@ const Login = () => {
             // Validate credentials before logging in
             await api.validateCredentials(config);
             login(username, password, baseUrl, apiKey);
-            navigate('/menu');
+            navigate('/menu', { replace: true });
         } catch (err) {
-            setError(err.message);
+            setError(extractSapMessage(err));
         } finally {
             setLoading(false);
         }
@@ -49,8 +69,7 @@ const Login = () => {
                             alt="On Device Solutions"
                             className="w-full max-w-[260px] h-auto mb-6 object-contain"
                         />
-                        <h1 className="text-xl font-bold tracking-tight mb-1 text-slate-200">Purchase Requisition</h1>
-                        <p className="text-slate-500 text-xs uppercase tracking-wider">Manager</p>
+                        <Heading level={1} className="text-slate-200 mb-1">ODS mWH</Heading>
                     </div>
 
                     {error && (
@@ -63,84 +82,57 @@ const Login = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                        <div>
-                            <label className="block text-xs uppercase font-bold text-slate-500 mb-1.5 ml-1">
-                                API Endpoint
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={baseUrl}
-                                    onChange={(e) => setBaseUrl(e.target.value)}
-                                    placeholder="https://..."
-                                    required
-                                    className="pl-10 bg-slate-800/50 border-slate-700 focus:border-blue-500"
-                                />
-                                <Server size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            </div>
-                        </div>
+                    <form onSubmit={handleSubmit} className="flex flex-col">
+                        <Input
+                            label="API Endpoint"
+                            value={baseUrl}
+                            onChange={(e) => setBaseUrl(e.target.value)}
+                            placeholder="https://..."
+                            required
+                            leftIcon={<Server size={16} />}
+                            className="bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-400"
+                        />
 
-                        <div>
-                            <label className="block text-xs uppercase font-bold text-slate-500 mb-1.5 ml-1">
-                                Username
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="Username"
-                                    className="pl-10 bg-slate-800/50 border-slate-700 focus:border-blue-500"
-                                />
-                                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            </div>
-                        </div>
+                        <Input
+                            label="Username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Username"
+                            leftIcon={<User size={16} />}
+                            className="bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-400"
+                        />
 
-                        <div>
-                            <label className="block text-xs uppercase font-bold text-slate-500 mb-1.5 ml-1">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    className="pl-10 bg-slate-800/50 border-slate-700 focus:border-blue-500"
-                                />
-                                <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            </div>
-                        </div>
+                        <Input
+                            type="password"
+                            label="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            leftIcon={<Key size={16} />}
+                            className="bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-400"
+                        />
 
                         <div className="relative my-2">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-slate-700/50"></div>
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-slate-900 px-2 text-slate-500">Or use API Key</span>
+                                <span className="bg-white px-2 text-slate-500">Or use API Key</span>
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-xs uppercase font-bold text-slate-500 mb-1.5 ml-1">
-                                API Key (Sandbox)
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="API Key"
-                                    className="pl-10 bg-slate-800/50 border-slate-700 focus:border-blue-500"
-                                />
-                                <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            </div>
-                        </div>
+                        <Input
+                            label="API Key (Sandbox)"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="API Key"
+                            leftIcon={<Key size={16} />}
+                            className="bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-400"
+                        />
 
-                        <button type="submit" className="btn-primary mt-2 w-full justify-center py-3 text-base" disabled={loading}>
+                        <Button type="submit" className="mt-2" disabled={loading}>
                             {loading ? <Loader className="animate-spin" size={20} /> : 'Sign In'}
-                        </button>
+                        </Button>
                     </form>
                 </div>
             </div>

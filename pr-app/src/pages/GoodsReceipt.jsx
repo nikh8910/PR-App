@@ -1,24 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, extractSapMessage } from '../services/api';
 import { constructGRPayload } from '../services/payloadHelper';
 import {
     Search, LayoutGrid, PackagePlus, Truck, ArrowLeft, Home,
     AlertCircle, CheckCircle, Loader, Calendar, Layers, ShoppingCart, User,
-    FileText, X, ChevronDown, ChevronUp, Mic, Filter, List
+    FileText, X, ChevronDown, ChevronUp, Mic, Filter, List, Scan, Hash, Trash2
 } from 'lucide-react';
+import BarcodeScanner from '../components/BarcodeScanner';
 
 const GoodsReceipt = () => {
     const navigate = useNavigate();
     const { apiConfig } = useAuth();
 
     // UI State
-    const [view, setView] = useState('list'); // 'list' | 'items' | 'create-gr'
+    const [view, setView] = useState('filter'); // 'filter' | 'list' | 'items'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter State
+    const toISO = (d) => d.toISOString().slice(0, 10);
+    const today = new Date();
+    const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(today.getDate() - 90);
+    const [filters, setFilters] = useState({
+        poNumber: '',
+        supplier: '',
+        dateFrom: toISO(ninetyDaysAgo),
+        dateTo: toISO(today),
+    });
 
     // Data State
     const [pos, setPos] = useState([]);
@@ -44,8 +56,42 @@ const GoodsReceipt = () => {
 
     const [headerText, setHeaderText] = useState('');
 
+    // Scanner state for batch/serial fields
+    const [showScanner, setShowScanner] = useState(false);
+    const [scanTarget, setScanTarget] = useState(null); // e.g. { type: 'batch', itemId: '00010' } or { type: 'serial', itemId: '00010', index: 0 }
+
+    const handleScan = (code) => {
+        if (scanTarget) {
+            const val = code.trim();
+            if (scanTarget.type === 'batch') {
+                updateItemData(scanTarget.itemId, 'batch', val);
+            } else if (scanTarget.type === 'serial') {
+                const key = `serialNumbers`;
+                const prev = itemsData[scanTarget.itemId]?.[key] || [];
+                const updated = [...prev];
+                updated[scanTarget.index] = val;
+                updateItemData(scanTarget.itemId, key, updated);
+            }
+        }
+        setShowScanner(false);
+        setScanTarget(null);
+    };
+
+    const updateSerialNumber = (itemId, index, value) => {
+        const key = 'serialNumbers';
+        const prev = itemsData[itemId]?.[key] || [];
+        const updated = [...prev];
+        updated[index] = value;
+        updateItemData(itemId, key, updated);
+    };
+
+    const getSerialCount = (itemId) => {
+        const qty = parseFloat(itemsData[itemId]?.quantity || 0);
+        return Number.isInteger(qty) && qty > 0 && qty <= 50 ? qty : 0;
+    };
+
     useEffect(() => {
-        loadPOs();
+        // No auto-load: wait for user to submit filters
     }, []);
 
     // Load Items immediately when selectedPO changes
@@ -55,16 +101,27 @@ const GoodsReceipt = () => {
         }
     }, [selectedPO]);
 
-    const loadPOs = async () => {
+    const loadPOs = async (activeFilters) => {
+        const f = activeFilters || filters;
+        if (!f.poNumber && !f.supplier && !f.dateFrom) {
+            setError('Please enter at least one filter (PO Number, Supplier, or Date From).');
+            return;
+        }
         setLoading(true);
-        console.log("Loading POs with config:", apiConfig);
+        setError(null);
+        setPos([]);
         try {
-            const data = await api.fetchPOs(apiConfig, 50);
-            console.log("POs fetched:", data);
+            const apiFilters = {};
+            if (f.poNumber?.trim()) apiFilters.purchaseOrder = f.poNumber.trim();
+            if (f.supplier?.trim()) apiFilters.supplier = f.supplier.trim().toUpperCase();
+            if (f.dateFrom) apiFilters.dateFrom = f.dateFrom;
+            if (f.dateTo) apiFilters.dateTo = f.dateTo;
+            const data = await api.fetchPOs(apiConfig, 100, apiFilters);
             const results = data.d ? data.d.results : (data.value || []);
             setPos(results);
+            if (results.length > 0) setView('list');
+            else setError('No Purchase Orders found matching your filters.');
 
-            // Fetch Vendor Names Extracurricularly
             const uniqueSuppliers = [...new Set(results.map(po => po.Supplier).filter(Boolean))];
             if (uniqueSuppliers.length > 0) {
                 api.fetchSuppliers(apiConfig, uniqueSuppliers).then(namesMap => {
@@ -72,8 +129,7 @@ const GoodsReceipt = () => {
                 });
             }
         } catch (err) {
-            console.error("PO Load Error:", err);
-            setError(err.message);
+            setError(extractSapMessage(err));
         } finally {
             setLoading(false);
         }
@@ -299,7 +355,9 @@ const GoodsReceipt = () => {
                     itemText: data.itemText,
                     deliveryNote,
                     storageLocation: data.storageLocation,
-                    movementType: selectedMovementType
+                    movementType: selectedMovementType,
+                    batch: data.batch || '',
+                    serialNumbers: data.serialNumbers || []
                 });
 
                 try {
@@ -446,74 +504,136 @@ const GoodsReceipt = () => {
         <>
             <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
                 {/* Header */}
-                <header className="app-header-straight pb-8 px-6 shadow-lg flex-none z-20 relative rounded-b-curved" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)' }}>
-                    <div className="flex justify-between items-start mb-6">
-                        <button onClick={() => navigate('/menu')} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition">
+                <header className="app-header-straight pb-3 px-6 shadow-md flex-none z-20 relative rounded-b-curved" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+                    <div className="flex justify-between items-center relative">
+                        <button onClick={() => view === 'items' ? setView('list') : view === 'list' ? setView('filter') : navigate(-1)} className="z-10 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Back">
+                            <ArrowLeft size={20} />
+                        </button>
+
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <h1 className="text-xl font-bold text-white tracking-wide">
+                                {view === 'items' ? `PO #${selectedPO?.PurchaseOrder}` : view === 'list' ? `${pos.length} POs` : 'Goods Receipt'}
+                            </h1>
+                            <p className="text-blue-200 text-[10px] font-medium uppercase tracking-wider mt-0.5">
+                                {view === 'items' ? 'Purchase Order Items' : view === 'list' ? 'Purchase Orders' : 'Search Filters'}
+                            </p>
+                        </div>
+
+                        <button onClick={() => navigate('/menu', { replace: true })} className="z-10 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Home">
                             <Home size={20} />
                         </button>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center -mt-2 mb-2 relative">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl font-bold text-white mb-1">
-                                {view === 'items' ? selectedPO?.PurchaseOrder : `${displayList.length}`}
-                                {view === 'list' && <span className="text-lg text-blue-200">/{pos.length}</span>}
-                            </h1>
-                        </div>
-                        <p className="text-blue-200 text-sm font-medium uppercase tracking-wider">
-                            {view === 'items' ? 'Purchase Order Items' : 'Purchase Orders'}
-                        </p>
-                    </div>
-
-                    {/* Search Bar - No Icon */}
-                    <div className="relative mt-4">
-                        <input
-                            type="text"
-                            placeholder={view === 'items' ? "Enter Material" : "Enter Document Number"}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white h-12 rounded-lg px-4 text-slate-700 placeholder-slate-400 shadow-lg border-0 focus:ring-2 focus:ring-lime-400 text-center"
-                        />
                     </div>
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto px-4 pt-6 pb-32 -mt-2 z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <main className="flex-1 overflow-y-auto px-4 pt-4 pb-32 z-10 content-area" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <div className="max-w-5xl mx-auto">
 
-                        {/* Fixed Toasts for better visibility */}
+                        {/* Inline Toasts */}
                         {(error || successMsg) && (
-                            <div className="fixed top-24 left-0 w-full z-[100] px-4 pointer-events-none flex flex-col items-center gap-2">
+                            <div className="w-full mb-3 flex flex-col gap-2">
                                 {error && (
-                                    <div className="pointer-events-auto bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 shadow-xl flex gap-3 max-w-md w-full animate-in slide-in-from-top-2">
-                                        <AlertCircle className="text-red-500 shrink-0" size={20} />
-                                        <p className="text-sm text-red-700 m-0 font-medium break-words">{error}</p>
-                                        <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600"><X size={16} /></button>
+                                    <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3 shadow-md flex gap-3 items-start w-full animate-in slide-in-from-top-2">
+                                        <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-xs font-bold text-red-700">Error</h4>
+                                            <p className="text-[11px] text-red-600 mt-0.5 whitespace-pre-wrap">{error}</p>
+                                        </div>
+                                        <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 rounded-md transition-colors shrink-0">
+                                            <X size={14} className="text-red-500" />
+                                        </button>
                                     </div>
                                 )}
                                 {successMsg && (
-                                    <div className="pointer-events-auto bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg p-4 shadow-xl flex gap-3 max-w-md w-full animate-in slide-in-from-top-2">
-                                        <CheckCircle className="text-emerald-500 shrink-0" size={20} />
-                                        <p className="text-sm text-emerald-700 m-0 font-medium">{successMsg}</p>
-                                        <button onClick={() => setSuccessMsg('')} className="ml-auto text-emerald-400 hover:text-emerald-600"><X size={16} /></button>
+                                    <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-3 shadow-md flex gap-3 items-start w-full animate-in slide-in-from-top-2">
+                                        <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-xs font-bold text-emerald-700">Success</h4>
+                                            <p className="text-[11px] text-emerald-600 mt-0.5 whitespace-pre-wrap">{successMsg}</p>
+                                        </div>
+                                        <button onClick={() => setSuccessMsg('')} className="p-1 hover:bg-emerald-100 rounded-md transition-colors shrink-0">
+                                            <X size={14} className="text-emerald-500" />
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         )}
 
+                        {/* FILTER SCREEN */}
+                        {view === 'filter' && (
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mt-4 space-y-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Filter size={16} className="text-blue-600" />
+                                    <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Search Filters</h2>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">PO Number</label>
+                                    <input
+                                        type="text"
+                                        value={filters.poNumber}
+                                        onChange={e => setFilters(f => ({ ...f, poNumber: e.target.value }))}
+                                        placeholder="e.g. 4500000123"
+                                        className="w-full h-11 bg-slate-50 border border-blue-200 rounded-lg px-3 text-sm font-bold text-blue-950 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">Supplier</label>
+                                    <input
+                                        type="text"
+                                        value={filters.supplier}
+                                        onChange={e => setFilters(f => ({ ...f, supplier: e.target.value }))}
+                                        placeholder="e.g. 10001234"
+                                        className="w-full h-11 bg-slate-50 border border-blue-200 rounded-lg px-3 text-sm font-bold text-blue-950 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">Date From</label>
+                                        <input
+                                            type="date"
+                                            value={filters.dateFrom}
+                                            onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))}
+                                            className="w-full h-11 bg-slate-50 border border-blue-200 rounded-lg px-3 text-sm font-bold text-blue-950 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">Date To</label>
+                                        <input
+                                            type="date"
+                                            value={filters.dateTo}
+                                            onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))}
+                                            className="w-full h-11 bg-slate-50 border border-blue-200 rounded-lg px-3 text-sm font-bold text-blue-950 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="w-full mt-4">
+                                    <button
+                                        onClick={() => loadPOs(filters)}
+                                        disabled={loading}
+                                        className="w-full bg-brand-blue hover:bg-opacity-90 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60"
+                                    >
+                                        {loading ? <><Loader className="animate-spin" size={16} /> Searching...</> : <><Search size={16} /> Search Purchase Orders</>}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {view === 'list' && (
                             <div className="space-y-3">
-                                {/* Tabs */}
-                                <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar mb-2">
-                                    <button className="flex-none flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-700 text-sm font-bold min-w-[140px] justify-center">
-                                        <FileText size={16} className="text-blue-600" /> Purchase Orders
-                                    </button>
-                                    <button className="flex-none flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full border border-transparent text-slate-500 text-sm font-medium min-w-[100px] justify-center">
-                                        STO
-                                    </button>
-                                    <button className="flex-none flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full border border-transparent text-slate-500 text-sm font-medium min-w-[100px] justify-center">
-                                        Production
-                                    </button>
+                                {/* Search input */}
+                                <div className="relative mb-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by PO Number or Supplier"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full bg-white h-11 rounded-xl px-4 text-slate-700 placeholder-slate-400 shadow-sm border border-slate-200 focus:ring-2 focus:ring-brand-blue outline-none text-sm"
+                                    />
+                                    <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
 
                                 {loading ? (
@@ -585,18 +705,16 @@ const GoodsReceipt = () => {
 
                         {view === 'items' && selectedPO && (
                             <div className="animate-in pb-20 space-y-4">
-                                <div className="flex justify-between items-center mb-0">
-                                    <button onClick={() => { setView('list'); setError(null); setSuccessMsg(''); }} style={{ backgroundColor: '#0ea5e9' }} className="px-4 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2">
-                                        <ArrowLeft size={16} /> Back
-                                    </button>
-                                    <button
-                                        onClick={handlePostAllGR}
-                                        disabled={confirmLoading || loading}
-                                        style={{ backgroundColor: '#0ea5e9' }}
-                                        className="px-6 py-2 hover:opacity-90 text-white font-bold text-xs uppercase rounded-lg shadow-md disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
-                                    >
-                                        {confirmLoading ? <Loader size={18} className="animate-spin text-white" /> : <>POST GR <CheckCircle size={18} /></>}
-                                    </button>
+                                {/* Items-view search */}
+                                <div className="relative mb-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by Material or Description"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full bg-white h-11 rounded-xl px-4 text-slate-700 placeholder-slate-400 shadow-sm border border-slate-200 focus:ring-2 focus:ring-brand-blue outline-none text-sm"
+                                    />
+                                    <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
 
                                 {/* Header Card */}
@@ -803,6 +921,57 @@ const GoodsReceipt = () => {
                                                                     />
                                                                 </div>
 
+                                                                {/* Batch Input */}
+                                                                <div className="mb-4">
+                                                                    <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">Batch (Optional)</label>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <input
+                                                                            className="flex-1 h-10 bg-slate-100 border-transparent rounded-lg px-3 text-sm font-bold text-blue-950 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                                                                            value={itemState.batch || ''}
+                                                                            onChange={e => updateItemData(item.PurchaseOrderItem, 'batch', e.target.value)}
+                                                                            placeholder="Enter batch number"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { setScanTarget({ type: 'batch', itemId: item.PurchaseOrderItem }); setShowScanner(true); }}
+                                                                            className="h-10 w-10 flex-none bg-brand-blue text-white rounded-lg flex items-center justify-center hover:opacity-90 transition-colors"
+                                                                            title="Scan Batch"
+                                                                        >
+                                                                            <Scan size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Serial Numbers (dynamic, count = qty for integer quantities) */}
+                                                                {getSerialCount(item.PurchaseOrderItem) > 0 && (
+                                                                    <div className="mb-4">
+                                                                        <label className="text-[10px] font-bold uppercase text-blue-900/70 mb-1.5 block">
+                                                                            Serial Numbers ({getSerialCount(item.PurchaseOrderItem)})
+                                                                        </label>
+                                                                        <div className="space-y-2">
+                                                                            {Array.from({ length: getSerialCount(item.PurchaseOrderItem) }).map((_, idx) => (
+                                                                                <div key={idx} className="flex items-center gap-2">
+                                                                                    <span className="text-[10px] font-bold text-slate-400 w-5 text-right">{idx + 1}</span>
+                                                                                    <input
+                                                                                        className="flex-1 h-9 bg-slate-100 border-transparent rounded-lg px-3 text-sm font-bold text-blue-950 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                                                                                        value={(itemState.serialNumbers || [])[idx] || ''}
+                                                                                        onChange={e => updateSerialNumber(item.PurchaseOrderItem, idx, e.target.value)}
+                                                                                        placeholder={`Serial #${idx + 1}`}
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => { setScanTarget({ type: 'serial', itemId: item.PurchaseOrderItem, index: idx }); setShowScanner(true); }}
+                                                                                        className="h-9 w-9 flex-none bg-brand-blue text-white rounded-lg flex items-center justify-center hover:opacity-90 transition-colors"
+                                                                                        title={`Scan Serial #${idx + 1}`}
+                                                                                    >
+                                                                                        <Scan size={14} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 <button disabled={confirmLoading} className="w-full btn-primary bg-blue-900 hover:bg-blue-800 text-white font-bold h-12 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 tracking-wide text-sm">
                                                                     SAVE
                                                                 </button>
@@ -815,7 +984,16 @@ const GoodsReceipt = () => {
                                     })}
                                 </div>
 
-                                {/* Static POST GR Button at Bottom of List */}
+                                {/* POST GR Button */}
+                                <div className="w-full mt-2 mb-2">
+                                    <button
+                                        onClick={handlePostAllGR}
+                                        disabled={confirmLoading || loading}
+                                        className="w-full bg-brand-blue hover:opacity-90 text-white font-bold h-14 rounded-xl shadow-md flex items-center justify-center gap-2 tracking-wide text-[16px] transition-all active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        {confirmLoading ? <Loader size={20} className="animate-spin text-white" /> : <>POST GR <CheckCircle size={20} /></>}
+                                    </button>
+                                </div>
 
                             </div>
                         )}
@@ -831,9 +1009,8 @@ const GoodsReceipt = () => {
             {/* Storage Location Modal - Replaced by Inline Dropdown */}
             {console.log("Rendering GoodsReceipt Component - SL Logic Inline")}
 
-
-
-
+            {/* Barcode Scanner Modal */}
+            {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => { setShowScanner(false); setScanTarget(null); }} />}
         </>
     );
 };

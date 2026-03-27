@@ -1,9 +1,26 @@
+/**
+ * @file Menu.jsx
+ * @description Screen: Main Application Menu (Hub)
+ *
+ * The central navigation hub displayed after login. Groups SAP process tiles
+ * into three sections:
+ *  1. Inventory Manager — Goods Receipt/Issue, Stock Overview, Physical Inventory, HUs
+ *  2. Warehouse Management — Inbound/Outbound/Internal/Stock/Packing sub-menus
+ *  3. User settings / logout
+ *
+ * Each tile navigates to either a direct screen or a sub-menu screen (e.g.
+ * WarehouseInbound). The menu also displays the currently logged-in user and
+ * connected SAP system.
+ *
+ * @route /menu
+ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     FileText, PackagePlus, PackageMinus, ClipboardList, LogOut,
-    Warehouse, Bell, X, Scan, Download, MoreVertical
+    Warehouse, Bell, X, Scan, Download, Upload, MoreVertical, Package,
+    ChevronDown, ChevronUp, ArrowLeftRight, BarChart3, ArrowLeft, Users
 } from 'lucide-react';
 
 const Menu = () => {
@@ -12,8 +29,16 @@ const Menu = () => {
 
     // State to track which menu is open
     const [openMenu, setOpenMenu] = useState(null);
+    const [expandedSections, setExpandedSections] = useState({
+        inventory: true,
+        warehouse: true
+    });
 
-    const menuItems = [
+    const toggleSection = (section) => {
+        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    const inventoryMenuItems = [
         {
             id: 'gr',
             title: 'Goods Receipt',
@@ -24,6 +49,8 @@ const Menu = () => {
             subMenus: [
                 { id: 'gr-po', label: 'Purchase Orders', path: '/gr', available: true },
                 { id: 'gr-inbound', label: 'Inbound Delivery', path: '/gr-inbound', available: true },
+                { id: 'gr-sto', label: 'STO Receipt', path: '/gr-sto', available: true },
+                { id: 'gr-production', label: 'Production / Work Order', path: '/gr-production', available: true },
             ]
         },
         {
@@ -36,6 +63,7 @@ const Menu = () => {
             subMenus: [
                 { id: 'gi-obd', label: 'Outbound Delivery', path: '/gi', available: true },
                 { id: 'gi-reservation', label: 'Reservation', path: '/gi-reservation', available: true },
+                { id: 'gi-sto', label: 'Stock Transfer Order (STO)', path: '/gi-sto', available: true },
             ]
         },
         {
@@ -60,6 +88,7 @@ const Menu = () => {
                 { id: 'view-stock', label: 'View Stock', path: '/stock', available: true }
             ]
         },
+
         {
             id: 'pr',
             title: 'Purchase Req',
@@ -75,8 +104,90 @@ const Menu = () => {
         }
     ];
 
+    const warehouseMenuItems = [
+        {
+            id: 'inbound',
+            title: 'Inbound',
+            icon: Download,
+            color: '#3b82f6',
+            iconBg: 'bg-blue-50',
+            iconColor: 'text-blue-600',
+            directPath: '/warehouse-inbound',
+            subMenus: [
+                { id: 'wm-inbound', label: 'Inbound Delivery', path: '/warehouse-inbound', available: true }
+            ]
+        },
+        {
+            id: 'outbound',
+            title: 'Outbound',
+            icon: Upload,
+            color: '#f97316',
+            iconBg: 'bg-orange-50',
+            iconColor: 'text-orange-600',
+            directPath: '/warehouse-outbound',
+            subMenus: [
+                { id: 'wm-outbound', label: 'Outbound Delivery', path: '/warehouse-outbound', available: true }
+            ]
+        },
+        {
+            id: 'internal',
+            title: 'Internal Mvmt',
+            icon: ArrowLeftRight,
+            color: '#7c3aed',
+            iconBg: 'bg-violet-50',
+            iconColor: 'text-violet-600',
+            directPath: '/warehouse-internal',
+            subMenus: [
+                { id: 'wm-adhoc', label: 'Adhoc Warehouse Task', path: '/warehouse-internal', available: true },
+                { id: 'wm-confirm-task', label: 'Confirm Task', path: '/warehouse-internal/confirm-task', available: true },
+                { id: 'wm-pi-count', label: 'Physical Inventory', path: '/warehouse-internal/phys-inv', available: true },
+                { id: 'wm-pi-adhoc', label: 'Adhoc PI Create', path: '/warehouse-internal/adhoc-pi', available: true }
+            ]
+        },
+        {
+            id: 'avail-stock',
+            title: 'Available Stock',
+            icon: BarChart3,
+            color: '#06b6d4',
+            iconBg: 'bg-cyan-50',
+            iconColor: 'text-cyan-600',
+            directPath: '/warehouse-stock',
+            subMenus: [
+                { id: 'wm-stock-bin', label: 'Stock by Bin', path: '/warehouse-stock/by-bin', available: true },
+                { id: 'wm-stock-product', label: 'Stock by Product', path: '/warehouse-stock/by-product', available: true }
+            ]
+        },
+        {
+            id: 'packing',
+            title: 'Packing',
+            icon: PackagePlus,
+            color: '#db2777',
+            iconBg: 'bg-pink-50',
+            iconColor: 'text-pink-600',
+            directPath: '/warehouse-packing',
+            subMenus: [
+                { id: 'wm-hu-transfer', label: 'HU to HU Transfer', path: '/warehouse-packing/hu-transfer', available: true },
+                { id: 'wm-pack-product', label: 'Pack Product to HU', path: '/warehouse-packing/pack-product', available: true },
+                { id: 'wm-create-hu', label: 'Create HU', path: '/warehouse-packing/create-hu', available: true }
+            ]
+        },
+        {
+            id: 'manage-resource',
+            title: 'Manage Resource',
+            icon: Users,
+            color: '#0ea5e9',
+            iconBg: 'bg-sky-50',
+            iconColor: 'text-sky-600',
+            directPath: '/manage-resource',
+            subMenus: [
+                { id: 'wm-manage-resource', label: 'Manage Resource', path: '/manage-resource', available: true }
+            ]
+        }
+    ];
+
+    const allMenuItems = [...inventoryMenuItems, ...warehouseMenuItems];
+
     const toggleMenu = (menuId) => {
-        console.log('Toggling menu:', menuId);
         setOpenMenu(prev => prev === menuId ? null : menuId);
     };
 
@@ -89,22 +200,17 @@ const Menu = () => {
         navigate(path);
     };
 
-    const activeItem = menuItems.find(item => item.id === openMenu);
+    const activeItem = allMenuItems.find(item => item.id === openMenu);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc' }}>
 
             {/* Header */}
             <header className="app-header pb-12 px-8 rounded-b-curved shadow-2xl flex-none z-20 relative" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}>
                 <div className="flex justify-between items-start mb-6">
                     <img src="/logo.png" style={{ height: '48px', width: 'auto' }} className="object-contain drop-shadow-md" alt="Logo" />
                     <div className="flex gap-3">
-                        <button className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition backdrop-blur-md border border-white/10">
-                            <Bell size={20} />
-                        </button>
-                        <button onClick={logout} className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition backdrop-blur-md border border-white/10">
-                            <MoreVertical size={20} />
-                        </button>
+                        {/* Header action buttons removed per UI rules */}
                     </div>
                 </div>
 
@@ -119,43 +225,116 @@ const Menu = () => {
             </header>
 
             {/* Main Content Area */}
-            <main style={{ flex: 1, overflowY: 'auto', padding: '24px', marginTop: '16px', position: 'relative', zIndex: 30 }}>
-                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <main style={{ flex: 1, overflow: 'hidden', padding: '24px', marginTop: '16px', position: 'relative', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', paddingBottom: '36px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', flex: 1, overflowY: 'auto' }}>
 
 
-                    {/* Inline Grid Style to force layout */}
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
-                        gap: '48px 16px',
-                        justifyItems: 'center'
-                    }}>
-                        {menuItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => toggleMenu(item.id)}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    border: 'none',
-                                    background: 'none',
-                                    cursor: 'pointer',
-                                    width: '100%'
-                                }}
-                            >
-                                <div className={`
-                                    w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm transition-all duration-200
-                                    ${openMenu === item.id ? 'bg-blue-600 text-white ring-4 ring-blue-100' : `${item.iconBg} ${item.iconColor}`}
-                                `}>
-                                    <item.icon size={32} strokeWidth={1.5} />
-                                </div>
-                                <span className="text-xs font-bold text-slate-700 text-center leading-tight" style={{ maxWidth: '80px' }}>
-                                    {item.title}
-                                </span>
-                            </button>
-                        ))}
+                    {/* Inventory Management Section */}
+                    <div className="mb-4">
+                        <button
+                            onClick={() => toggleSection('inventory')}
+                            className="w-full flex items-center justify-between px-2 mb-4 bg-transparent border-none outline-none cursor-pointer"
+                        >
+                            <h4 className="text-slate-800 font-bold tracking-wide text-sm uppercase m-0">Inventory Management</h4>
+                            {expandedSections.inventory ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
+                        </button>
+                        {expandedSections.inventory && (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '32px 16px',
+                                justifyItems: 'center'
+                            }}>
+                                {inventoryMenuItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => toggleMenu(item.id)}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            width: '100%'
+                                        }}
+                                    >
+                                        <div className={`
+                                        w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm transition-all duration-200
+                                        ${openMenu === item.id ? 'bg-blue-600 text-white ring-4 ring-blue-100' : `${item.iconBg} ${item.iconColor}`}
+                                    `}>
+                                            <item.icon size={32} strokeWidth={1.5} />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-700 text-center leading-tight" style={{ maxWidth: '80px' }}>
+                                            {item.title}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t border-slate-100 my-4"></div>
+
+                    {/* Warehouse Management Section */}
+                    <div>
+                        <button
+                            onClick={() => toggleSection('warehouse')}
+                            className="w-full flex items-center justify-between px-2 mb-4 bg-transparent border-none outline-none cursor-pointer"
+                        >
+                            <h4 className="text-slate-800 font-bold tracking-wide text-sm uppercase m-0">Warehouse Management</h4>
+                            {expandedSections.warehouse ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
+                        </button>
+                        {expandedSections.warehouse && (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '32px 16px',
+                                justifyItems: 'center'
+                            }}>
+                                {warehouseMenuItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            // WM items: navigate directly to process list page
+                                            if (item.directPath) {
+                                                navigate(item.directPath);
+                                            } else {
+                                                toggleMenu(item.id);
+                                            }
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            width: '100%'
+                                        }}
+                                    >
+                                        <div className={`
+                                        w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm transition-all duration-200
+                                        ${openMenu === item.id ? 'bg-blue-600 text-white ring-4 ring-blue-100' : `${item.iconBg} ${item.iconColor}`}
+                                    `}>
+                                            <item.icon size={32} strokeWidth={1.5} />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-700 text-center leading-tight" style={{ maxWidth: '80px' }}>
+                                            {item.title}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Logout Button */}
+                    <div className="mt-8 mb-2">
+                        <button onClick={logout} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-white text-red-500 border border-red-200 shadow-sm hover:bg-red-50 transition-all">
+                            <LogOut size={20} /> Logout
+                        </button>
                     </div>
                 </div>
             </main>
@@ -181,6 +360,7 @@ const Menu = () => {
                         zIndex: 50,
                         boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
                         maxHeight: '80vh',
+                        overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column'
                     }}>
@@ -202,8 +382,8 @@ const Menu = () => {
                         </div>
 
                         {/* List */}
-                        <div style={{ padding: '16px', overflowY: 'auto' }}>
-                            <div className="space-y-3">
+                        <div style={{ flex: '1 1 auto', padding: '16px', overflowY: 'auto' }}>
+                            <div className="flex flex-col gap-3">
                                 {activeItem.subMenus.map((sub) => (
                                     <button
                                         key={sub.id}
@@ -213,14 +393,6 @@ const Menu = () => {
                                         <span className={`font-bold text-sm ${sub.available ? 'text-slate-800' : 'text-slate-400'}`}>
                                             {sub.label}
                                         </span>
-                                        {sub.available && (
-                                            <div className="flex gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-[#003366] text-white flex items-center justify-center">
-                                                    <Scan size={16} />
-                                                </div>
-
-                                            </div>
-                                        )}
                                     </button>
                                 ))}
                             </div>

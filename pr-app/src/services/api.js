@@ -663,11 +663,10 @@ export const api = {
                 _masterDataCache.plants = retErr;
                 return retErr;
             }
-        },
-
-
-
-            // Fetch Storage Locations for a specific Plant (using API_PRODUCT_SRV like GR for PO)
+        })();
+        _masterDataPromises.plants = promise;
+        return promise;
+        },// Fetch Storage Locations for a specific Plant (using API_PRODUCT_SRV like GR for PO)
             fetchStorageLocationsByPlant: async (config, plant) => {
                 if (_masterDataCache.storageLocsByPlant[plant]) return _masterDataCache.storageLocsByPlant[plant];
 
